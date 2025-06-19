@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Mario Kart - Vue intérieure avec volant</title>
+    <title>Mario Kart - Volant Réaliste</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       body {
@@ -25,13 +25,10 @@
     <video id="video2" src="mario/KartNB.mp4" loop muted playsinline></video>
 
     <a-scene>
-      <!-- Skydome vidéo tourné de 180° à droite -->
       <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
 
-      <!-- Lumière -->
       <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
-      <!-- Kart complet -->
       <a-gltf-model
         id="kart"
         src="kart/VOITURE_COMPLETE.gltf"
@@ -40,11 +37,9 @@
         rotation="-0.5 0.9 -1.15"
       ></a-gltf-model>
 
-      <!-- Caméra (fixe sauf look) -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
         <a-camera look-controls wasd-controls="enabled: false">
           <a-cursor
-            id="cursor"
             fuse="false"
             rayOrigin="mouse"
             material="color: white; shader: flat"
@@ -52,7 +47,6 @@
           ></a-cursor>
         </a-camera>
 
-        <!-- Volant cliquable -->
         <a-obj-model
           id="volant"
           class="clickable"
@@ -81,41 +75,38 @@
 
       const volant = document.querySelector("#volant");
       let volantPris = false;
-      let angleVolantZ = 0; // axe Z, comme un vrai volant
+      let angleVolant = 0;
       let previousMouseX = null;
 
-      // Base de rotation fixe du volant (X et Y inchangés)
-      const baseRotX = -49.88;
-      const baseRotY = -22.92;
-      const baseRotZ = 141.6;
+      // axe local de rotation (Z local du volant)
+      const localZAxis = new THREE.Vector3(0, 0, 1);
 
-      // Clic pour activer/désactiver le contrôle du volant
       volant.addEventListener("click", () => {
         volantPris = !volantPris;
         document.body.style.cursor = volantPris ? "grabbing" : "default";
-        volant.setAttribute("material", "color: " + (volantPris ? "red" : "black"));
+        volant.setAttribute("material", "color", volantPris ? "red" : "black");
       });
 
-      // Tourner le volant avec la souris gauche/droite
       window.addEventListener("mousemove", (event) => {
         if (!volantPris) return;
 
         if (previousMouseX !== null) {
           const deltaX = event.clientX - previousMouseX;
-          angleVolantZ += deltaX * 0.5; // Sensibilité ajustée
-          angleVolantZ = Math.max(-45, Math.min(45, angleVolantZ)); // Limite gauche/droite
-          volant.setAttribute("rotation", `${baseRotX} ${baseRotY} ${baseRotZ + angleVolantZ}`);
+          const rotationStep = -deltaX * 0.005; // négatif pour correspondance direction
+
+          angleVolant += rotationStep * (180 / Math.PI); // conversion en degrés pour la logique
+          angleVolant = Math.max(-45, Math.min(45, angleVolant));
+
+          volant.object3D.rotateOnAxis(localZAxis, rotationStep);
         }
 
         previousMouseX = event.clientX;
       });
 
-      // Réinitialise le mouvement
       window.addEventListener("mouseup", () => {
         previousMouseX = null;
       });
 
-      // Change le skydome selon la direction du volant
       function setSkydome(index) {
         if (index !== currentIndex) {
           const currentTime = videos[currentIndex].currentTime;
@@ -125,14 +116,13 @@
         }
       }
 
-      // Vérifie régulièrement la rotation Z pour changer le skydome
       setInterval(() => {
         if (!volantPris) return;
 
-        if (angleVolantZ > 10) {
-          setSkydome(0); // Skydome 1 (droite)
-        } else if (angleVolantZ < -10) {
-          setSkydome(1); // Skydome 2 (gauche)
+        if (angleVolant > 10) {
+          setSkydome(0);
+        } else if (angleVolant < -10) {
+          setSkydome(1);
         }
       }, 100);
     </script>
