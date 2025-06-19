@@ -12,6 +12,11 @@
       video {
         display: none;
       }
+
+      /* Curseur souris quand on peut cliquer */
+      .clickable {
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -56,11 +61,17 @@
 
       <!-- Caméra dans le kart, orientée vers l’avant -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
-        <a-entity camera look-controls></a-entity>
+        <a-entity
+          id="camera"
+          camera
+          look-controls
+          position="0 0 0"
+        ></a-entity>
 
         <!-- Volant -->
         <a-obj-model
           id="volant"
+          class="clickable"
           src="kart/volant.obj"
           scale="10 10 10"
           material="color: black"
@@ -88,8 +99,12 @@
       const switchBtn = document.querySelector("#switchBtn");
       switchBtn.style.display = "none";
 
-      // Récupérer le volant
+      // Volant et camera
       const volant = document.querySelector("#volant");
+      const camera = document.querySelector("#camera");
+
+      // Etat : volant pris ou pas
+      let volantPris = false;
 
       // Fonction pour changer le skydome
       function setSkydome(index) {
@@ -101,20 +116,33 @@
         }
       }
 
-      // Surveillance de la rotation du volant (axe Y locale)
+      // Quand on clique sur le volant, on active ou désactive la prise en main
+      volant.addEventListener("click", () => {
+        volantPris = !volantPris;
+        if (volantPris) {
+          console.log("Volant pris !");
+          // On peut afficher un message ou changer couleur du volant
+          volant.setAttribute("material", "color: red");
+          // Optionnel : bloquer les contrôles de la caméra pour mieux tourner volant
+          camera.components["look-controls"].pause();
+        } else {
+          console.log("Volant relâché !");
+          volant.setAttribute("material", "color: black");
+          camera.components["look-controls"].play();
+        }
+      });
+
+      // Surveillance rotation volant quand pris
       setInterval(() => {
+        if (!volantPris) return;
         if (!volant) return;
 
         const rotation = volant.object3D.rotation; // en radians
-        const rotY = THREE.MathUtils.radToDeg(rotation.y); // conversion degrés
-
-        // console.log("Rotation Y volant:", rotY.toFixed(2));
+        const rotY = THREE.MathUtils.radToDeg(rotation.y); // degrés
 
         if (rotY > 10) {
-          // tourné à droite
           setSkydome(0);
         } else if (rotY < -10) {
-          // tourné à gauche
           setSkydome(1);
         }
       }, 100);
