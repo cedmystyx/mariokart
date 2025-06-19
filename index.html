@@ -12,12 +12,13 @@
         padding: 10px 20px;
         font-size: 16px;
         z-index: 10;
-        background-color: rgba(0,0,0,0.6);
+        background-color: rgba(0, 0, 0, 0.6);
         color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
       }
+
       video {
         display: none;
       }
@@ -31,14 +32,19 @@
     <video id="video2" src="mario/KartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
 
     <a-scene>
-      <!-- Skydome vidéo -->
-      <a-videosphere id="skydome" src="#video1" rotation="0 -90 0"></a-videosphere>
+      <!-- Skydome vidéo tourné de 180° à droite -->
+      <a-videosphere id="skydome" src="#video1" rotation="0 90 0"></a-videosphere>
 
       <!-- Lumière pour éclairage -->
       <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
       <!-- Kart complet (GLTF) visible autour de toi -->
-      <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 0.0089" rotation="-0.5070676486907786 0.9 -1.151072210417824" gltf-model="kart/VOITURE_COMPLETE.gltf">
+      <a-gltf-model
+        id="kart"
+        src="kart/VOITURE_COMPLETE.gltf"
+        scale="13 13 13"
+        position="-0.03134 -6.20565 0.0089"
+        rotation="-0.5070676486907786 0.9 -1.151072210417824">
       </a-gltf-model>
 
       <!-- Caméra dans le kart -->
@@ -46,7 +52,12 @@
         <a-entity camera look-controls></a-entity>
 
         <!-- Volant attaché devant la caméra -->
-        <a-obj-model src="kart/volant.obj" scale="10 10 10" material="color: black" position="0.10847 -2.22356 6.20985" rotation="-35.46895230757361 168.12529765641798 128.25660244003478">
+        <a-obj-model
+          src="kart/volant.obj"
+          scale="10 10 10"
+          material="color: black"
+          position="0.10847 -2.22356 6.20985"
+          rotation="-35.46895230757361 168.12529765641798 128.25660244003478">
         </a-obj-model>
       </a-entity>
     </a-scene>
@@ -66,7 +77,7 @@
 
       document.querySelector('#switchBtn').addEventListener('click', () => {
         const currentTime = videos[currentIndex].currentTime;
-        videos.forEach(video => video.currentTime = currentTime);
+        videos.forEach(video => (video.currentTime = currentTime));
 
         currentIndex = (currentIndex + 1) % videos.length;
         skydome.setAttribute('src', `#video${currentIndex + 1}`);
