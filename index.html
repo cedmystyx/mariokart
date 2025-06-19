@@ -1,22 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Mario Kart - Vue intérieure avec volant</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       #switchBtn {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        padding: 10px 20px;
-        font-size: 16px;
-        z-index: 10;
-        background-color: rgba(0, 0, 0, 0.6);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+        display: none; /* Bouton caché */
       }
 
       video {
@@ -28,8 +18,24 @@
     <button id="switchBtn">Changer de Skydome</button>
 
     <!-- Vidéos -->
-    <video id="video1" src="mario/kart.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
-    <video id="video2" src="mario/KartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
+    <video
+      id="video1"
+      src="mario/kart.mp4"
+      loop
+      crossorigin="anonymous"
+      webkit-playsinline
+      playsinline
+      muted
+    ></video>
+    <video
+      id="video2"
+      src="mario/KartNB.mp4"
+      loop
+      crossorigin="anonymous"
+      webkit-playsinline
+      playsinline
+      muted
+    ></video>
 
     <a-scene>
       <!-- Skydome vidéo tourné de 180° à droite -->
@@ -39,39 +45,79 @@
       <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
       <!-- Kart complet -->
-      <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5070676486907786 0.9 -1.151072210417824" gltf-model="kart/VOITURE_COMPLETE.gltf">
-      </a-gltf-model>
+      <a-gltf-model
+        id="kart"
+        src="kart/VOITURE_COMPLETE.gltf"
+        scale="13 13 13"
+        position="-0.03134 -6.20565 -1.75587"
+        rotation="-0.5070676486907786 0.9 -1.151072210417824"
+        gltf-model="kart/VOITURE_COMPLETE.gltf"
+      ></a-gltf-model>
 
       <!-- Caméra dans le kart, orientée vers l’avant -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
         <a-entity camera look-controls></a-entity>
 
         <!-- Volant -->
-        <a-obj-model src="kart/volant.obj" scale="10 10 10" material="color: black" position="-0.13608 -2.40846 -4.64479" rotation="-49.88055972849921 -22.92003067861832 141.5990706152463">
-        </a-obj-model>
+        <a-obj-model
+          id="volant"
+          src="kart/volant.obj"
+          scale="10 10 10"
+          material="color: black"
+          position="-0.13608 -2.40846 -4.64479"
+          rotation="-49.88055972849921 -22.92003067861832 141.5990706152463"
+        ></a-obj-model>
       </a-entity>
     </a-scene>
 
     <script>
       const videos = [
-        document.querySelector('#video1'),
-        document.querySelector('#video2')
+        document.querySelector("#video1"),
+        document.querySelector("#video2"),
       ];
-      const skydome = document.querySelector('#skydome');
+      const skydome = document.querySelector("#skydome");
       let currentIndex = 0;
 
-      videos.forEach(video => {
+      videos.forEach((video) => {
         video.muted = true;
+        video.loop = true;
         video.play();
       });
 
-      document.querySelector('#switchBtn').addEventListener('click', () => {
-        const currentTime = videos[currentIndex].currentTime;
-        videos.forEach(video => (video.currentTime = currentTime));
+      // Bouton caché
+      const switchBtn = document.querySelector("#switchBtn");
+      switchBtn.style.display = "none";
 
-        currentIndex = (currentIndex + 1) % videos.length;
-        skydome.setAttribute('src', `#video${currentIndex + 1}`);
-      });
+      // Récupérer le volant
+      const volant = document.querySelector("#volant");
+
+      // Fonction pour changer le skydome
+      function setSkydome(index) {
+        if (index !== currentIndex) {
+          const currentTime = videos[currentIndex].currentTime;
+          videos[index].currentTime = currentTime;
+          currentIndex = index;
+          skydome.setAttribute("src", `#video${index + 1}`);
+        }
+      }
+
+      // Surveillance de la rotation du volant (axe Y locale)
+      setInterval(() => {
+        if (!volant) return;
+
+        const rotation = volant.object3D.rotation; // en radians
+        const rotY = THREE.MathUtils.radToDeg(rotation.y); // conversion degrés
+
+        // console.log("Rotation Y volant:", rotY.toFixed(2));
+
+        if (rotY > 10) {
+          // tourné à droite
+          setSkydome(0);
+        } else if (rotY < -10) {
+          // tourné à gauche
+          setSkydome(1);
+        }
+      }, 100);
     </script>
   </body>
 </html>
