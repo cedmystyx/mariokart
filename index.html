@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mario Kart - Volant interactif stable VR ready</title>
+  <title>Mario Kart - Volant VR interactif</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin:0; overflow:hidden; background: black;}
@@ -31,7 +31,7 @@
 <video id="video1" src="mario/kart.mp4" loop muted playsinline crossorigin="anonymous"></video>
 <video id="video2" src="mario/kartNB.mp4" loop muted playsinline crossorigin="anonymous"></video>
 
-<a-scene>
+<a-scene volant-vr-control>
   <!-- Skydome -->
   <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
 
@@ -44,16 +44,15 @@
   <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
     <a-camera look-controls wasd-controls="enabled: false">
-      <!-- Curseur VR sans rayOrigin mouse -->
       <a-cursor fuse="false" material="color: white; shader: flat"
         geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02">
       </a-cursor>
     </a-camera>
 
-    <!-- Contrôleur droit avec laser et raycaster sur .clickable -->
-    <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+    <!-- Contrôleur VR droit avec laser -->
+    <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
-    <!-- Pivot qui tourne -->
+    <!-- Pivot du volant -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
       <a-obj-model
         id="volant"
@@ -89,10 +88,7 @@
   const sensitivity = 0.5;
   let animationFrameId;
 
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-  }
-
+  // Click (souris + VR)
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     document.body.style.cursor = volantPris ? "grabbing" : "default";
@@ -101,6 +97,10 @@
     if (volantPris) audioGrab.play();
     else animateReturnToCenter();
   });
+
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
 
   function animateReturnToCenter() {
     cancelAnimationFrame(animationFrameId);
@@ -133,6 +133,7 @@
     }
   }
 
+  // Souris
   window.addEventListener("mousemove", (e) => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -148,6 +149,7 @@
     previousMouseX = null;
   });
 
+  // Tactile
   window.addEventListener("touchstart", (e) => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
@@ -168,8 +170,36 @@
     previousMouseX = null;
   });
 
-  // Init
   updateRotation();
+
+  // Composant A-Frame pour contrôleur VR
+  let baseControllerRotation = null;
+
+  AFRAME.registerComponent('volant-vr-control', {
+    tick: function () {
+      if (!volantPris) {
+        baseControllerRotation = null;
+        return;
+      }
+
+      const controller = document.querySelector('#controller');
+      if (!controller || !controller.object3D) return;
+
+      const rot = controller.object3D.rotation;
+      if (!rot) return;
+
+      if (baseControllerRotation === null) {
+        baseControllerRotation = rot.z;
+        return;
+      }
+
+      let delta = rot.z - baseControllerRotation;
+      let deltaDeg = THREE.MathUtils.radToDeg(delta) * sensitivity;
+      angleZ = clamp(deltaDeg, -maxAngle, maxAngle);
+      updateRotation();
+      updateSkydome();
+    }
+  });
 </script>
 
 </body>
