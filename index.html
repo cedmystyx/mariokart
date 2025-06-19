@@ -1,118 +1,168 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Mario Kart - Volant plat rotation Y</title>
-    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
+<head>
+<meta charset="utf-8" />
+<title>Mario Kart - Volant interactif amélioré</title>
+<script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+<style>
+  body { margin:0; overflow:hidden; background: black;}
+  video { display:none;}
+  .clickable { cursor:pointer; }
+  #info {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    color: white; font-family: Arial; font-size: 1.2em;
+    background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="info">Clique sur le volant pour le prendre en main</div>
+
+<!-- Vidéos -->
+<video id="video1" src="mario/kart.mp4" loop muted playsinline crossorigin="anonymous"></video>
+<video id="video2" src="mario/KartNB.mp4" loop muted playsinline crossorigin="anonymous"></video>
+
+<a-scene>
+  <!-- Skydome -->
+  <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
+
+  <!-- Lumière -->
+  <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
+
+  <!-- Kart -->
+  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.15"></a-gltf-model>
+
+  <!-- Caméra -->
+  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
+    <a-camera look-controls wasd-controls="enabled: false">
+      <a-cursor fuse="false" rayOrigin="mouse" material="color: white; shader: flat" geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"></a-cursor>
+    </a-camera>
+
+    <!-- Volant interactif -->
+    <a-obj-model
+      id="volant"
+      class="clickable"
+      src="kart/volant.obj"
+      scale="10 10 10"
+      material="color: black"
+      position="-0.13608 -2.40846 -4.64479"
+      rotation="90 90 0"
+    ></a-obj-model>
+  </a-entity>
+</a-scene>
+
+<script>
+  // Audio feedback setup
+  const audioGrab = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+  const audioSwitch = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
+
+  // Vidéos & Skydome
+  const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
+  const skydome = document.querySelector("#skydome");
+  let currentIndex = 0;
+
+  // Jouer vidéos avec gestion d'erreur
+  videos.forEach((video, i) => {
+    video.play().catch(err => console.warn(`Erreur lecture vidéo ${i+1}:`, err));
+  });
+
+  const volant = document.querySelector("#volant");
+  const infoDiv = document.getElementById('info');
+  let volantPris = false;
+  let previousMouseX = null;
+  let angleY = 0; // rotation autour de Y
+  const maxAngle = 45;
+  const sensitivity = 0.5;
+  let animationFrameId;
+
+  // Helper pour clamp
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  // Prendre ou lâcher le volant
+  volant.addEventListener("click", () => {
+    volantPris = !volantPris;
+    document.body.style.cursor = volantPris ? "grabbing" : "default";
+    volant.setAttribute("material", "color", volantPris ? "red" : "black");
+    infoDiv.style.display = volantPris ? "none" : "block";
+    if (volantPris) audioGrab.play();
+    else animateReturnToCenter();
+  });
+
+  // Animation retour au centre fluide
+  function animateReturnToCenter() {
+    cancelAnimationFrame(animationFrameId);
+    function step() {
+      if (Math.abs(angleY) < 0.5) {
+        angleY = 0;
+        updateRotation();
+        return;
       }
-      video {
-        display: none;
-      }
-      .clickable {
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Vidéos -->
-    <video id="video1" src="mario/kart.mp4" loop muted playsinline></video>
-    <video id="video2" src="mario/KartNB.mp4" loop muted playsinline></video>
+      angleY *= 0.8; // amortissement
+      updateRotation();
+      animationFrameId = requestAnimationFrame(step);
+    }
+    animationFrameId = requestAnimationFrame(step);
+  }
 
-    <a-scene>
-      <!-- Skydome -->
-      <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
+  // Appliquer la rotation du volant
+  function updateRotation() {
+    volant.setAttribute("rotation", `90 ${90 + angleY} 0`);
+  }
 
-      <!-- Lumière -->
-      <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
+  // Changer skydome selon l'angle
+  function updateSkydome() {
+    if (angleY > 10 && currentIndex !== 0) {
+      skydome.setAttribute("src", "#video1");
+      currentIndex = 0;
+      audioSwitch.play();
+    } else if (angleY < -10 && currentIndex !== 1) {
+      skydome.setAttribute("src", "#video2");
+      currentIndex = 1;
+      audioSwitch.play();
+    }
+  }
 
-      <!-- Kart -->
-      <a-gltf-model
-        id="kart"
-        src="kart/VOITURE_COMPLETE.gltf"
-        scale="13 13 13"
-        position="-0.03134 -6.20565 -1.75587"
-        rotation="-0.5 0.9 -1.15"
-      ></a-gltf-model>
+  // Gestion mouvement souris
+  window.addEventListener("mousemove", (e) => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      let deltaX = e.clientX - previousMouseX;
+      angleY = clamp(angleY + deltaX * sensitivity, -maxAngle, maxAngle);
+      updateRotation();
+      updateSkydome();
+    }
+    previousMouseX = e.clientX;
+  });
 
-      <!-- Caméra -->
-      <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
-        <a-camera look-controls wasd-controls="enabled: false">
-          <a-cursor
-            fuse="false"
-            rayOrigin="mouse"
-            material="color: white; shader: flat"
-            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
-          ></a-cursor>
-        </a-camera>
+  window.addEventListener("mouseup", () => {
+    previousMouseX = null;
+  });
 
-        <!-- Volant à plat -->
-        <a-obj-model
-  id="volant"
-  class="clickable"
-  src="kart/volant.obj"
-  scale="10 10 10"
-  material="color: black"
-  position="-0.13608 -2.40846 -4.64479"
-  rotation="90 180 0"/>
-  </a-obj-model>
-      </a-entity>
-    </a-scene>
+  // Support tactile basique
+  window.addEventListener("touchstart", (e) => {
+    if (!volantPris) return;
+    previousMouseX = e.touches[0].clientX;
+  }, {passive:true});
 
-    <script>
-      const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
-      const skydome = document.querySelector("#skydome");
-      let currentIndex = 0;
+  window.addEventListener("touchmove", (e) => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      let deltaX = e.touches[0].clientX - previousMouseX;
+      angleY = clamp(angleY + deltaX * sensitivity, -maxAngle, maxAngle);
+      updateRotation();
+      updateSkydome();
+    }
+    previousMouseX = e.touches[0].clientX;
+  }, {passive:true});
 
-      videos.forEach((video) => {
-        video.play();
-      });
+  window.addEventListener("touchend", () => {
+    previousMouseX = null;
+  });
+</script>
 
-      const volant = document.querySelector("#volant");
-      let volantPris = false;
-      let angleY = 0; // rotation sur Y uniquement
-      let previousMouseX = null;
-
-      // Clic pour prendre/lâcher le volant
-      volant.addEventListener("click", () => {
-        volantPris = !volantPris;
-        document.body.style.cursor = volantPris ? "grabbing" : "default";
-        volant.setAttribute("material", "color", volantPris ? "red" : "black");
-      });
-
-      // Mouvement gauche/droite = rotation sur Y
-      window.addEventListener("mousemove", (event) => {
-        if (!volantPris) return;
-
-        if (previousMouseX !== null) {
-          const deltaX = event.clientX - previousMouseX;
-          angleY += deltaX * 0.5; // sensibilité
-          angleY = Math.max(-45, Math.min(45, angleY)); // Limite gauche/droite
-          volant.setAttribute("rotation", `90 ${angleY} 0`);
-        }
-
-        previousMouseX = event.clientX;
-      });
-
-      window.addEventListener("mouseup", () => {
-        previousMouseX = null;
-      });
-
-      // Changement de skydome si on tourne trop à gauche/droite
-      setInterval(() => {
-        if (!volantPris) return;
-
-        if (angleY > 10) {
-          skydome.setAttribute("src", "#video1"); // à droite
-          currentIndex = 0;
-        } else if (angleY < -10) {
-          skydome.setAttribute("src", "#video2"); // à gauche
-          currentIndex = 1;
-        }
-      }, 100);
-    </script>
-  </body>
+</body>
 </html>
