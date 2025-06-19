@@ -57,10 +57,9 @@
         rotation="-0.5070676486907786 0.9 -1.151072210417824"
       ></a-gltf-model>
 
-      <!-- Caméra dans le kart, orientée vers l’avant -->
+      <!-- Caméra fixe dans le kart, juste look-controls -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
-        <!-- Caméra avec cursor au centre -->
-        <a-camera id="camera" look-controls>
+        <a-camera id="camera" look-controls wasd-controls="enabled: false">
           <a-cursor
             id="cursor"
             fuse="false"
@@ -97,12 +96,8 @@
         video.play();
       });
 
-      const switchBtn = document.querySelector("#switchBtn");
-      switchBtn.style.display = "none";
-
       const volant = document.querySelector("#volant");
       const camera = document.querySelector("#camera");
-
       let volantPris = false;
 
       function setSkydome(index) {
@@ -117,13 +112,9 @@
       volant.addEventListener("click", () => {
         volantPris = !volantPris;
         if (volantPris) {
-          console.log("Volant pris !");
           volant.setAttribute("material", "color: red");
-          camera.components["look-controls"].pause();
         } else {
-          console.log("Volant relâché !");
           volant.setAttribute("material", "color: black");
-          camera.components["look-controls"].play();
         }
       });
 
