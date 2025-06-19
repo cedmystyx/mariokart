@@ -6,14 +6,13 @@
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       #switchBtn {
-        display: none; /* Bouton caché */
+        display: none;
       }
 
       video {
         display: none;
       }
 
-      /* Curseur souris quand on peut cliquer */
       .clickable {
         cursor: pointer;
       }
@@ -56,17 +55,20 @@
         scale="13 13 13"
         position="-0.03134 -6.20565 -1.75587"
         rotation="-0.5070676486907786 0.9 -1.151072210417824"
-        gltf-model="kart/VOITURE_COMPLETE.gltf"
       ></a-gltf-model>
 
       <!-- Caméra dans le kart, orientée vers l’avant -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
-        <a-entity
-          id="camera"
-          camera
-          look-controls
-          position="0 0 0"
-        ></a-entity>
+        <!-- Caméra avec cursor au centre -->
+        <a-camera id="camera" look-controls>
+          <a-cursor
+            id="cursor"
+            fuse="false"
+            rayOrigin="mouse"
+            material="color: white; shader: flat"
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+          ></a-cursor>
+        </a-camera>
 
         <!-- Volant -->
         <a-obj-model
@@ -95,18 +97,14 @@
         video.play();
       });
 
-      // Bouton caché
       const switchBtn = document.querySelector("#switchBtn");
       switchBtn.style.display = "none";
 
-      // Volant et camera
       const volant = document.querySelector("#volant");
       const camera = document.querySelector("#camera");
 
-      // Etat : volant pris ou pas
       let volantPris = false;
 
-      // Fonction pour changer le skydome
       function setSkydome(index) {
         if (index !== currentIndex) {
           const currentTime = videos[currentIndex].currentTime;
@@ -116,14 +114,11 @@
         }
       }
 
-      // Quand on clique sur le volant, on active ou désactive la prise en main
       volant.addEventListener("click", () => {
         volantPris = !volantPris;
         if (volantPris) {
           console.log("Volant pris !");
-          // On peut afficher un message ou changer couleur du volant
           volant.setAttribute("material", "color: red");
-          // Optionnel : bloquer les contrôles de la caméra pour mieux tourner volant
           camera.components["look-controls"].pause();
         } else {
           console.log("Volant relâché !");
@@ -132,13 +127,12 @@
         }
       });
 
-      // Surveillance rotation volant quand pris
       setInterval(() => {
         if (!volantPris) return;
         if (!volant) return;
 
-        const rotation = volant.object3D.rotation; // en radians
-        const rotY = THREE.MathUtils.radToDeg(rotation.y); // degrés
+        const rotation = volant.object3D.rotation;
+        const rotY = THREE.MathUtils.radToDeg(rotation.y);
 
         if (rotY > 10) {
           setSkydome(0);
