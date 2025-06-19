@@ -35,10 +35,10 @@
       <!-- Skydome vidéo tourné de 180° à droite -->
       <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
 
-      <!-- Lumière pour éclairage -->
+      <!-- Lumière -->
       <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
-      <!-- Kart complet (GLTF) visible autour de toi -->
+      <!-- Kart complet -->
       <a-gltf-model
         id="kart"
         src="kart/VOITURE_COMPLETE.gltf"
@@ -47,11 +47,11 @@
         rotation="-0.5070676486907786 0.9 -1.151072210417824">
       </a-gltf-model>
 
-      <!-- Caméra dans le kart -->
-      <a-entity id="cameraRig" position="0 1.2 0">
+      <!-- Caméra dans le kart, orientée vers l’avant -->
+      <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
         <a-entity camera look-controls></a-entity>
 
-        <!-- Volant attaché devant la caméra -->
+        <!-- Volant -->
         <a-obj-model
           src="kart/volant.obj"
           scale="10 10 10"
