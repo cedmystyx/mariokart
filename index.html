@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Mario Kart - Vue dans le Kart</title>
+    <title>Mario Kart Intégré</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       #switchBtn {
@@ -29,34 +29,27 @@
 
     <!-- Vidéos -->
     <video id="video1" src="mario/kart.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
-    <video id="video2" src="mario/kartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
+    <video id="video2" src="mario/KartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
 
     <a-scene>
-      <!-- Caméra avec volant intégré -->
-      <a-entity id="cameraRig" position="0 1.6 0">
-        <a-entity camera look-controls wasd-controls></a-entity>
+      <!-- Groupe contenant le kart + caméra dans le kart -->
+      <a-entity position="0 0 0">
+        <!-- Kart complet (GLTF) -->
+        <a-gltf-model 
+          src="/mnt/data/VOITURE_COMPLETE.gltf"
+          scale="1 1 1"
+          position="0 0 0"
+          rotation="0 180 0">
+        </a-gltf-model>
 
-        <!-- Volant attaché à la caméra -->
-        <a-obj-model 
-          src="kart/volant.obj"
-          position="0 -0.3 -0.5"
-          rotation="0 0 0"
-          scale="0.5 0.5 0.5">
-        </a-obj-model>
+        <!-- Caméra à l'intérieur du kart (ajuste selon modèle réel) -->
+        <a-entity id="cameraRig" position="0 1.1 0">
+          <a-entity camera look-controls></a-entity>
+        </a-entity>
       </a-entity>
 
-      <!-- Skydome vidéo -->
+      <!-- Skydome -->
       <a-videosphere id="skydome" src="#video1" rotation="0 -90 0"></a-videosphere>
-
-      <!-- (Optionnel) Kart complet pour ambiance, placé loin ou supprimé -->
-      <!--
-      <a-gltf-model 
-        src="kart/VOITURE_COMPLETE.gltf" 
-        position="0 0 -10" 
-        scale="1 1 1"
-        rotation="0 180 0">
-      </a-gltf-model>
-      -->
     </a-scene>
 
     <script>
@@ -68,13 +61,11 @@
       const skydome = document.querySelector('#skydome');
       let currentIndex = 0;
 
-      // Lancer toutes les vidéos
       videos.forEach(video => {
         video.muted = true;
         video.play();
       });
 
-      // Switch entre les skydomes tout en gardant le même moment
       document.querySelector('#switchBtn').addEventListener('click', () => {
         const currentTime = videos[currentIndex].currentTime;
         videos.forEach(video => video.currentTime = currentTime);
