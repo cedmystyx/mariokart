@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Skydome Mario Vidéo Sync Switch</title>
+    <title>Mario Kart - Vue dans le Kart</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       #switchBtn {
@@ -29,14 +29,34 @@
 
     <!-- Vidéos -->
     <video id="video1" src="mario/kart.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
-    <video id="video2" src="mario/KartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
+    <video id="video2" src="mario/kartNB.mp4" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
 
     <a-scene>
-      <!-- Caméra -->
-      <a-entity camera look-controls position="0 1.6 0"></a-entity>
+      <!-- Caméra avec volant intégré -->
+      <a-entity id="cameraRig" position="0 1.6 0">
+        <a-entity camera look-controls wasd-controls></a-entity>
 
-      <!-- Skydome -->
+        <!-- Volant attaché à la caméra -->
+        <a-obj-model 
+          src="kart/volant.obj"
+          position="0 -0.3 -0.5"
+          rotation="0 0 0"
+          scale="0.5 0.5 0.5">
+        </a-obj-model>
+      </a-entity>
+
+      <!-- Skydome vidéo -->
       <a-videosphere id="skydome" src="#video1" rotation="0 -90 0"></a-videosphere>
+
+      <!-- (Optionnel) Kart complet pour ambiance, placé loin ou supprimé -->
+      <!--
+      <a-gltf-model 
+        src="kart/VOITURE_COMPLETE.gltf" 
+        position="0 0 -10" 
+        scale="1 1 1"
+        rotation="0 180 0">
+      </a-gltf-model>
+      -->
     </a-scene>
 
     <script>
@@ -48,21 +68,17 @@
       const skydome = document.querySelector('#skydome');
       let currentIndex = 0;
 
-      // Démarrer toutes les vidéos mais n'en afficher qu'une
+      // Lancer toutes les vidéos
       videos.forEach(video => {
-        video.muted = true; // éviter autoplay block
+        video.muted = true;
         video.play();
       });
 
+      // Switch entre les skydomes tout en gardant le même moment
       document.querySelector('#switchBtn').addEventListener('click', () => {
         const currentTime = videos[currentIndex].currentTime;
+        videos.forEach(video => video.currentTime = currentTime);
 
-        // Avancer toutes les vidéos à la même position
-        videos.forEach(video => {
-          video.currentTime = currentTime;
-        });
-
-        // Changer de vidéo active
         currentIndex = (currentIndex + 1) % videos.length;
         skydome.setAttribute('src', `#video${currentIndex + 1}`);
       });
