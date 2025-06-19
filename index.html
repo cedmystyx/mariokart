@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Mario Kart - Volant Réaliste</title>
+    <title>Mario Kart - Volant Réaliste Fixe</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       body {
@@ -25,10 +25,13 @@
     <video id="video2" src="mario/KartNB.mp4" loop muted playsinline></video>
 
     <a-scene>
+      <!-- Skydome -->
       <a-videosphere id="skydome" src="#video1" rotation="0 270 0"></a-videosphere>
 
+      <!-- Lumière -->
       <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
+      <!-- Kart -->
       <a-gltf-model
         id="kart"
         src="kart/VOITURE_COMPLETE.gltf"
@@ -37,6 +40,7 @@
         rotation="-0.5 0.9 -1.15"
       ></a-gltf-model>
 
+      <!-- Caméra -->
       <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
         <a-camera look-controls wasd-controls="enabled: false">
           <a-cursor
@@ -47,6 +51,7 @@
           ></a-cursor>
         </a-camera>
 
+        <!-- Volant -->
         <a-obj-model
           id="volant"
           class="clickable"
@@ -54,32 +59,27 @@
           scale="10 10 10"
           material="color: black"
           position="-0.13608 -2.40846 -4.64479"
-          rotation="-49.88 -22.92 141.6"
         ></a-obj-model>
       </a-entity>
     </a-scene>
 
     <script>
-      const videos = [
-        document.querySelector("#video1"),
-        document.querySelector("#video2"),
-      ];
+      const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
       const skydome = document.querySelector("#skydome");
       let currentIndex = 0;
 
       videos.forEach((video) => {
-        video.muted = true;
-        video.loop = true;
         video.play();
       });
 
       const volant = document.querySelector("#volant");
       let volantPris = false;
-      let angleVolant = 0;
       let previousMouseX = null;
+      let angleZ = 0; // Rotation sur Z uniquement
 
-      // axe local de rotation (Z local du volant)
-      const localZAxis = new THREE.Vector3(0, 0, 1);
+      // Rotation initiale du volant sur X et Y (extraits de ton modèle)
+      const baseRotationX = THREE.MathUtils.degToRad(-49.88);
+      const baseRotationY = THREE.MathUtils.degToRad(-22.92);
 
       volant.addEventListener("click", () => {
         volantPris = !volantPris;
@@ -92,12 +92,10 @@
 
         if (previousMouseX !== null) {
           const deltaX = event.clientX - previousMouseX;
-          const rotationStep = -deltaX * 0.005; // négatif pour correspondance direction
+          angleZ += deltaX * 0.01;
+          angleZ = Math.max(THREE.MathUtils.degToRad(-45), Math.min(THREE.MathUtils.degToRad(45), angleZ));
 
-          angleVolant += rotationStep * (180 / Math.PI); // conversion en degrés pour la logique
-          angleVolant = Math.max(-45, Math.min(45, angleVolant));
-
-          volant.object3D.rotateOnAxis(localZAxis, rotationStep);
+          volant.object3D.rotation.set(baseRotationX, baseRotationY, angleZ + THREE.MathUtils.degToRad(141.6));
         }
 
         previousMouseX = event.clientX;
@@ -119,9 +117,10 @@
       setInterval(() => {
         if (!volantPris) return;
 
-        if (angleVolant > 10) {
+        const degrees = THREE.MathUtils.radToDeg(angleZ);
+        if (degrees > 10) {
           setSkydome(0);
-        } else if (angleVolant < -10) {
+        } else if (degrees < -10) {
           setSkydome(1);
         }
       }, 100);
