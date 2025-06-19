@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mario Kart - Volant interactif corrigé</title>
+  <title>Mario Kart - Volant interactif stable</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin:0; overflow:hidden; background: black;}
@@ -41,7 +41,7 @@
   <!-- Kart -->
   <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.15"></a-gltf-model>
 
-  <!-- Caméra -->
+  <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
     <a-camera look-controls wasd-controls="enabled: false">
       <a-cursor fuse="false" rayOrigin="mouse" material="color: white; shader: flat"
@@ -49,25 +49,24 @@
       </a-cursor>
     </a-camera>
 
-    <!-- Volant interactif -->
-    <a-obj-model
-      id="volant"
-      class="clickable"
-      src="kart/volant.obj"
-      scale="10 10 10"
-      material="color: black"
-      position="-0.13608 -2.40846 -4.64479"
-      rotation="-68.89645599109609 -87.47289362482768 177.64785621149227"
-    ></a-obj-model>
+    <!-- Pivot qui tourne -->
+    <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
+      <a-obj-model
+        id="volant"
+        class="clickable"
+        src="kart/volant.obj"
+        scale="10 10 10"
+        material="color: black"
+        rotation="-68.89645599109609 -87.47289362482768 177.64785621149227"
+      ></a-obj-model>
+    </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
-  // Sons
   const audioGrab = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
   const audioSwitch = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
 
-  // Vidéos & skydome
   const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
   const skydome = document.querySelector("#skydome");
   let currentIndex = 0;
@@ -77,24 +76,17 @@
   });
 
   const volant = document.querySelector("#volant");
+  const pivot = document.querySelector("#volantPivot");
   const infoDiv = document.getElementById('info');
   let volantPris = false;
   let previousMouseX = null;
-
-  // Rotation initiale exacte du volant
-  const initRotation = {
-    x: -68.89645599109609,
-    y: -87.47289362482768,
-    z: 177.64785621149227
-  };
-
-  let angleZ = 0; // rotation dynamique autour de Z
+  let angleZ = 0;
   const maxAngle = 45;
   const sensitivity = 0.5;
   let animationFrameId;
 
-  function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
   }
 
   volant.addEventListener("click", () => {
@@ -122,7 +114,7 @@
   }
 
   function updateRotation() {
-    volant.setAttribute("rotation", `${initRotation.x} ${initRotation.y} ${initRotation.z + angleZ}`);
+    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
   }
 
   function updateSkydome() {
@@ -137,7 +129,6 @@
     }
   }
 
-  // Souris
   window.addEventListener("mousemove", (e) => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -153,7 +144,6 @@
     previousMouseX = null;
   });
 
-  // Tactile
   window.addEventListener("touchstart", (e) => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
@@ -174,7 +164,7 @@
     previousMouseX = null;
   });
 
-  // Appliquer la rotation initiale au démarrage
+  // Init
   updateRotation();
 </script>
 
