@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mario Kart - Volant interactif stable</title>
+  <title>Mario Kart - Volant interactif stable VR ready</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin:0; overflow:hidden; background: black;}
@@ -44,10 +44,14 @@
   <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
     <a-camera look-controls wasd-controls="enabled: false">
-      <a-cursor fuse="false" rayOrigin="mouse" material="color: white; shader: flat"
+      <!-- Curseur VR sans rayOrigin mouse -->
+      <a-cursor fuse="false" material="color: white; shader: flat"
         geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02">
       </a-cursor>
     </a-camera>
+
+    <!-- Contrôleur droit avec laser et raycaster sur .clickable -->
+    <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
     <!-- Pivot qui tourne -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
