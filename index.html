@@ -2,18 +2,16 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Mario Kart - Volant Réaliste Fixe</title>
+    <title>Mario Kart - Volant plat rotation Y</title>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <style>
       body {
         margin: 0;
         overflow: hidden;
       }
-
       video {
         display: none;
       }
-
       .clickable {
         cursor: pointer;
       }
@@ -51,7 +49,7 @@
           ></a-cursor>
         </a-camera>
 
-        <!-- Volant -->
+        <!-- Volant à plat -->
         <a-obj-model
           id="volant"
           class="clickable"
@@ -59,6 +57,7 @@
           scale="10 10 10"
           material="color: black"
           position="-0.13608 -2.40846 -4.64479"
+          rotation="90 0 0"
         ></a-obj-model>
       </a-entity>
     </a-scene>
@@ -74,28 +73,25 @@
 
       const volant = document.querySelector("#volant");
       let volantPris = false;
+      let angleY = 0; // rotation sur Y uniquement
       let previousMouseX = null;
-      let angleZ = 0; // Rotation sur Z uniquement
 
-      // Rotation initiale du volant sur X et Y (extraits de ton modèle)
-      const baseRotationX = THREE.MathUtils.degToRad(-49.88);
-      const baseRotationY = THREE.MathUtils.degToRad(-22.92);
-
+      // Clic pour prendre/lâcher le volant
       volant.addEventListener("click", () => {
         volantPris = !volantPris;
         document.body.style.cursor = volantPris ? "grabbing" : "default";
         volant.setAttribute("material", "color", volantPris ? "red" : "black");
       });
 
+      // Mouvement gauche/droite = rotation sur Y
       window.addEventListener("mousemove", (event) => {
         if (!volantPris) return;
 
         if (previousMouseX !== null) {
           const deltaX = event.clientX - previousMouseX;
-          angleZ += deltaX * 0.01;
-          angleZ = Math.max(THREE.MathUtils.degToRad(-45), Math.min(THREE.MathUtils.degToRad(45), angleZ));
-
-          volant.object3D.rotation.set(baseRotationX, baseRotationY, angleZ + THREE.MathUtils.degToRad(141.6));
+          angleY += deltaX * 0.5; // sensibilité
+          angleY = Math.max(-45, Math.min(45, angleY)); // Limite gauche/droite
+          volant.setAttribute("rotation", `90 ${angleY} 0`);
         }
 
         previousMouseX = event.clientX;
@@ -105,23 +101,16 @@
         previousMouseX = null;
       });
 
-      function setSkydome(index) {
-        if (index !== currentIndex) {
-          const currentTime = videos[currentIndex].currentTime;
-          videos[index].currentTime = currentTime;
-          currentIndex = index;
-          skydome.setAttribute("src", `#video${index + 1}`);
-        }
-      }
-
+      // Changement de skydome si on tourne trop à gauche/droite
       setInterval(() => {
         if (!volantPris) return;
 
-        const degrees = THREE.MathUtils.radToDeg(angleZ);
-        if (degrees > 10) {
-          setSkydome(0);
-        } else if (degrees < -10) {
-          setSkydome(1);
+        if (angleY > 10) {
+          skydome.setAttribute("src", "#video1"); // à droite
+          currentIndex = 0;
+        } else if (angleY < -10) {
+          skydome.setAttribute("src", "#video2"); // à gauche
+          currentIndex = 1;
         }
       }, 100);
     </script>
