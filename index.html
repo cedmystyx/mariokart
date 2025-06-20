@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mario Kart 3D - Kart + Volant + Vidéo</title>
+  <title>Mario Kart 3D - Vidéo auto + Kart + Volant</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
@@ -11,16 +11,16 @@
 </head>
 <body>
 
-<!-- Vidéo 360° cachée, utilisée dans la sphère -->
-<video id="kartVideo" muted playsinline crossorigin="anonymous" loop autoplay>
-  <source src="mario/kart.mp4" type="video/mp4" />
+<!-- Vidéo 360° -->
+<video id="kartVideo" playsinline loop muted autoplay crossorigin="anonymous">
+  <source src="mario/kart.mp4" type="video/mp4">
 </video>
 
 <a-scene>
   <!-- Skydome avec la vidéo -->
   <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
 
-  <!-- Kart principal -->
+  <!-- Kart -->
   <a-entity
     id="kart"
     gltf-model="./kart/VOITURE_COMPLETE.gltf"
@@ -29,7 +29,7 @@
     rotation="0 0 0">
   </a-entity>
 
-  <!-- Volant indépendant -->
+  <!-- Volant -->
   <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
     <a-obj-model
       id="volant"
@@ -40,6 +40,17 @@
     </a-obj-model>
   </a-entity>
 </a-scene>
+
+<script>
+  // Forcer la lecture vidéo après le chargement
+  window.addEventListener("load", () => {
+    const video = document.getElementById("kartVideo");
+    video.muted = true;
+    video.play().catch(err => {
+      console.warn("Lecture vidéo bloquée :", err);
+    });
+  });
+</script>
 
 </body>
 </html>
