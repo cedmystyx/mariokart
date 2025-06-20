@@ -25,10 +25,10 @@
 </head>
 <body>
 
-<div id="info">Clique sur le volant pour le prendre en main</div>
+<div id="info">Clique sur le volant pour le prendre en main (active le son)</div>
 
 <!-- Vidéos -->
-<video id="video1" src="mario/kart.mp4" muted playsinline crossorigin="anonymous"></video>
+<video id="video1" src="mario/kart.mp4" playsinline crossorigin="anonymous"></video>
 <video id="video2" src="mario/kartNB.mp4" loop muted playsinline crossorigin="anonymous"></video>
 
 <a-scene volant-vr-control>
@@ -39,7 +39,7 @@
   <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
   <!-- Kart -->
-  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="30 30 30" position="-0.01955 -14.45253 -1.71962" rotation="-0.5 0.9 -1.1500000000000001" gltf-model="kart/VOITURE_COMPLETE.gltf"></a-gltf-model>
+  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="30 30 30" position="-0.01955 -14.45253 -1.71962" rotation="-0.5 0.9 -1.1500000000000001"></a-gltf-model>
   
   <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
@@ -54,13 +54,12 @@
 
     <!-- Pivot du volant -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
-      <a-obj-model id="volant" class="clickable" src="kart/volant.obj" scale="30 30 30" material="color: black" rotation="-68.89645599109609 -87.47289362482768 177.64785621149227" position="-0.25131 -1.42936 -9.29492"></a-obj-model>
+      <a-obj-model id="volant" class="clickable" src="kart/volant.obj" scale="30 30 30" material="color: black" rotation="-68.896 -87.472 177.647" position="-0.25131 -1.42936 -9.29492"></a-obj-model>
     </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
-  // Sons voiture locaux
   const audioStart = new Audio('sound/19025__han1__car-start-and-drive.mp3');
   const audioAccelerate = new Audio('sound/19024__han1__car-acceleration.mp3');
   const audioDrive = new Audio('sound/147242__qubodup__car-engine-loop.mp3');
@@ -72,32 +71,84 @@
   const video1 = document.getElementById('video1');
   const video2 = document.getElementById('video2');
 
-  // Enchaînement audio séquentiel
-  function playCarSoundsSequence() {
-    audioStart.play();
-    audioStart.onended = () => {
-      audioAccelerate.play();
-    };
-    audioAccelerate.onended = () => {
-      audioDrive.play();
-    };
+  // Variables pour gestion son synchronisé
+  let hasStartedSequence = false;
+  let victoryPlayed = false;
+
+  // Pour stopper tous les sons (utile pour transitions)
+  function stopAllSounds() {
+    [audioStart, audioAccelerate, audioDrive, audioVictory1, audioVictory2].forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
   }
 
-  // Démarrer la séquence au début de la vidéo1
-  video1.addEventListener('play', () => {
-    playCarSoundsSequence();
+  // Gestion du clic pour autoriser son et lancer la vidéo + sons
+  const volant = document.querySelector("#volant");
+  const infoDiv = document.getElementById('info');
+
+  volant.addEventListener("click", () => {
+    if (!hasStartedSequence) {
+      // On autorise son et lance vidéo1
+      video1.muted = false;
+      video1.play();
+
+      // Lance la lecture des sons synchronisés par événement timeupdate
+      infoDiv.style.display = 'none';
+
+      hasStartedSequence = true;
+    }
   });
 
-  // Quand la vidéo1 finit, on arrête moteur et on joue 2 sons victoire l’un après l’autre
-  video1.addEventListener('ended', () => {
-    audioDrive.pause();
-    audioVictory1.play();
-    audioVictory1.onended = () => {
-      audioVictory2.play();
-    };
+  // Synchronisation sons sur la vidéo1 via timeupdate
+  video1.addEventListener('timeupdate', () => {
+    if (!hasStartedSequence) return;
+
+    const t = video1.currentTime;
+
+    // 0s - 3s : Démarrage moteur
+    if (t < 3) {
+      if (audioStart.paused) {
+        stopAllSounds();
+        audioStart.play();
+      }
+      return;
+    }
+
+    // 3s - 5.5s : Accélération
+    if (t >= 3 && t < 5.5) {
+      if (audioAccelerate.paused) {
+        stopAllSounds();
+        audioAccelerate.play();
+      }
+      return;
+    }
+
+    // 5.5s - fin - 5s : Moteur en conduite normale
+    if (t >= 5.5 && t < video1.duration - 5) {
+      if (audioDrive.paused) {
+        stopAllSounds();
+        audioDrive.play();
+      }
+      return;
+    }
+
+    // Derniers 5 secondes de la vidéo : Arrêt moteur + sons victoire
+    if (t >= video1.duration - 5 && !victoryPlayed) {
+      stopAllSounds();
+      audioDrive.pause();
+
+      audioVictory1.play();
+      audioVictory1.onended = () => {
+        audioVictory2.play();
+      };
+
+      victoryPlayed = true;
+      return;
+    }
   });
 
-  // --- Code volant et interaction existants ---
+  // --- Reste du code volant et skydome ---
 
   const audioGrab = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
   const audioSwitch = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
@@ -106,13 +157,9 @@
   const skydome = document.querySelector("#skydome");
   let currentIndex = 0;
 
-  videos.forEach((video, i) => {
-    video.play().catch(err => console.warn(`Erreur vidéo ${i + 1}:`, err));
-  });
+  video2.play().catch(() => {}); // video2 en loop muet, joue au début
 
-  const volant = document.querySelector("#volant");
   const pivot = document.querySelector("#volantPivot");
-  const infoDiv = document.getElementById('info');
   let volantPris = false;
   let previousMouseX = null;
   let angleZ = 0;
@@ -124,7 +171,6 @@
     volantPris = !volantPris;
     document.body.style.cursor = volantPris ? "grabbing" : "default";
     volant.setAttribute("material", "color", volantPris ? "red" : "black");
-    infoDiv.style.display = volantPris ? "none" : "block";
     if (volantPris) audioGrab.play();
     else animateReturnToCenter();
   });
@@ -207,7 +253,7 @@
   updateRotation();
   updateSkydome();
 
-  // A-Frame contrôleur VR
+  // A-Frame VR controller
   let baseControllerRotation = null;
 
   AFRAME.registerComponent('volant-vr-control', {
