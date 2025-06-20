@@ -108,20 +108,29 @@
       if (Math.abs(angleZ) < 0.5) {
         angleZ = 0;
         updateRotation();
+        updateSkydome();
         return;
       }
       angleZ *= 0.8;
       updateRotation();
+      updateSkydome();
       animationFrameId = requestAnimationFrame(step);
     }
     animationFrameId = requestAnimationFrame(step);
   }
 
   function updateRotation() {
+    // Rotation du volant sur Z
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
+
+    // Rotation du skydome sur Y, inversée pour que la vue suive le volant
+    const baseRotationY = 270; // rotation initiale de la vidéo
+    const newRotationY = baseRotationY - angleZ;
+    skydome.setAttribute('rotation', `0 ${newRotationY} 0`);
   }
 
   function updateSkydome() {
+    // Change la source vidéo selon la rotation, pour effet visuel supplémentaire
     if (angleZ > 10 && currentIndex !== 0) {
       skydome.setAttribute("src", "#video1");
       currentIndex = 0;
@@ -171,6 +180,7 @@
   });
 
   updateRotation();
+  updateSkydome();
 
   // Composant A-Frame pour contrôleur VR
   let baseControllerRotation = null;
