@@ -5,6 +5,7 @@
   <title>Mario Kart 3D - Volant réaliste avec vidéo</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
+    /* 
     body { margin: 0; overflow: hidden; background: #000; }
     video { display: none; }
     #info {
@@ -24,16 +25,20 @@
     #volant {
       cursor: grab;
     }
+    */
   </style>
 </head>
 <body>
 
+<!-- 
 <div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le pour diriger le kart.</div>
 
 <!-- Vidéo 360° -->
+<!--
 <video id="kartVideo" muted playsinline crossorigin="anonymous" loop>
   <source src="mario/kart.mp4" type="video/mp4" />
 </video>
+-->
 
 <a-scene kart-controls embedded>
   <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
@@ -70,114 +75,7 @@
   </a-entity>
 </a-scene>
 
+<!--
 <script>
   const kartVideo = document.getElementById("kartVideo");
-  const volant = document.getElementById("volant");
-  const pivot = document.getElementById("volantPivot");
-  const kart = document.getElementById("kart");
-  const cameraRig = document.getElementById("cameraRig");
-  const info = document.getElementById("info");
-
-  let volantPris = false;
-  let angleZ = 0;
-  const maxAngle = 45;
-  const sensitivity = 0.5;
-  let previousMouseX = null;
-
-  async function tryPlayVideo() {
-    try {
-      await kartVideo.play();
-      console.log("Vidéo démarrée");
-      // Refresh source pour A-Frame
-      document.querySelector("#skydome").setAttribute("src", "#kartVideo");
-    } catch (err) {
-      console.warn("Erreur lecture vidéo:", err);
-    }
-  }
-
-  window.addEventListener("load", () => {
-    kartVideo.muted = true;
-    tryPlayVideo();
-  });
-
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-  }
-
-  function updateVisuals() {
-    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
-    kart.setAttribute("rotation", `0 ${-angleZ} 0`);
-    cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
-  }
-
-  function resetVolant() {
-    function step() {
-      if (Math.abs(angleZ) < 0.5) {
-        angleZ = 0;
-        updateVisuals();
-        return;
-      }
-      angleZ *= 0.8;
-      updateVisuals();
-      requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  volant.addEventListener("click", () => {
-    volantPris = !volantPris;
-    volant.setAttribute("material", "color", volantPris ? "red" : "black");
-    info.style.display = volantPris ? "none" : "block";
-    if (!volantPris) resetVolant();
-  });
-
-  window.addEventListener("mousemove", e => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const deltaX = e.clientX - previousMouseX;
-      angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.clientX;
-  });
-  window.addEventListener("mouseup", () => previousMouseX = null);
-
-  window.addEventListener("touchstart", e => {
-    if (!volantPris) return;
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-  window.addEventListener("touchmove", e => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const dx = e.touches[0].clientX - previousMouseX;
-      angleZ = clamp(angleZ + dx * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-  window.addEventListener("touchend", () => previousMouseX = null);
-
-  let baseZRotation = null;
-  AFRAME.registerComponent("kart-controls", {
-    tick: () => {
-      if (!volantPris) {
-        baseZRotation = null;
-        return;
-      }
-      const controller = document.querySelector("#controller");
-      if (!controller || !controller.object3D) return;
-
-      const rot = controller.object3D.rotation;
-      if (baseZRotation === null) {
-        baseZRotation = rot.z;
-        return;
-      }
-      const deltaDeg = THREE.MathUtils.radToDeg(rot.z - baseZRotation);
-      angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-  });
-</script>
-
-</body>
-</html>
+  const volant = document.getElementById
