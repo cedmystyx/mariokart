@@ -28,7 +28,7 @@
 <div id="info">Clique sur le volant pour le prendre en main</div>
 
 <!-- Vidéos -->
-<video id="video1" src="mario/kart.mp4" loop muted playsinline crossorigin="anonymous"></video>
+<video id="video1" src="mario/kart.mp4" muted playsinline crossorigin="anonymous"></video>
 <video id="video2" src="mario/kartNB.mp4" loop muted playsinline crossorigin="anonymous"></video>
 
 <a-scene volant-vr-control>
@@ -60,10 +60,49 @@
 </a-scene>
 
 <script>
+  // Sons voiture locaux
+  const audioStart = new Audio('sound/19025__han1__car-start-and-drive.mp3');
+  const audioAccelerate = new Audio('sound/19024__han1__car-acceleration.mp3');
+  const audioDrive = new Audio('sound/147242__qubodup__car-engine-loop.mp3');
+  const audioVictory1 = new Audio('sound/462248__silverillusionist__victory-sound-3.mp3');
+  const audioVictory2 = new Audio('sound/466133__humanoide9000__victory-fanfare.mp3');
+
+  audioDrive.loop = true;
+
+  const video1 = document.getElementById('video1');
+  const video2 = document.getElementById('video2');
+
+  // Enchaînement audio séquentiel
+  function playCarSoundsSequence() {
+    audioStart.play();
+    audioStart.onended = () => {
+      audioAccelerate.play();
+    };
+    audioAccelerate.onended = () => {
+      audioDrive.play();
+    };
+  }
+
+  // Démarrer la séquence au début de la vidéo1
+  video1.addEventListener('play', () => {
+    playCarSoundsSequence();
+  });
+
+  // Quand la vidéo1 finit, on arrête moteur et on joue 2 sons victoire l’un après l’autre
+  video1.addEventListener('ended', () => {
+    audioDrive.pause();
+    audioVictory1.play();
+    audioVictory1.onended = () => {
+      audioVictory2.play();
+    };
+  });
+
+  // --- Code volant et interaction existants ---
+
   const audioGrab = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
   const audioSwitch = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
 
-  const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
+  const videos = [video1, video2];
   const skydome = document.querySelector("#skydome");
   let currentIndex = 0;
 
@@ -77,11 +116,10 @@
   let volantPris = false;
   let previousMouseX = null;
   let angleZ = 0;
-  const maxAngle = 30;  // <-- Limite modifiée ici
+  const maxAngle = 30;
   const sensitivity = 0.5;
   let animationFrameId;
 
-  // Click (souris + VR)
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     document.body.style.cursor = volantPris ? "grabbing" : "default";
@@ -113,17 +151,13 @@
   }
 
   function updateRotation() {
-    // Rotation du volant sur Z
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
-
-    // Rotation du skydome sur Y, inversée pour que la vue suive le volant
-    const baseRotationY = 270; // rotation initiale de la vidéo
+    const baseRotationY = 270;
     const newRotationY = baseRotationY - angleZ;
     skydome.setAttribute('rotation', `0 ${newRotationY} 0`);
   }
 
   function updateSkydome() {
-    // Change la source vidéo selon la rotation, pour effet visuel supplémentaire
     if (angleZ > 10 && currentIndex !== 0) {
       skydome.setAttribute("src", "#video1");
       currentIndex = 0;
@@ -135,7 +169,6 @@
     }
   }
 
-  // Souris
   window.addEventListener("mousemove", (e) => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -151,7 +184,6 @@
     previousMouseX = null;
   });
 
-  // Tactile
   window.addEventListener("touchstart", (e) => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
@@ -175,7 +207,7 @@
   updateRotation();
   updateSkydome();
 
-  // Composant A-Frame pour contrôleur VR
+  // A-Frame contrôleur VR
   let baseControllerRotation = null;
 
   AFRAME.registerComponent('volant-vr-control', {
@@ -184,18 +216,14 @@
         baseControllerRotation = null;
         return;
       }
-
       const controller = document.querySelector('#controller');
       if (!controller || !controller.object3D) return;
-
       const rot = controller.object3D.rotation;
       if (!rot) return;
-
       if (baseControllerRotation === null) {
         baseControllerRotation = rot.z;
         return;
       }
-
       let delta = rot.z - baseControllerRotation;
       let deltaDeg = THREE.MathUtils.radToDeg(delta) * sensitivity;
       angleZ = clamp(deltaDeg, -maxAngle, maxAngle);
