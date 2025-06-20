@@ -21,6 +21,9 @@
       cursor: pointer;
       z-index: 10;
     }
+    #volant {
+      cursor: grab;
+    }
   </style>
 </head>
 <body>
@@ -61,8 +64,8 @@
         src="kart/volant.obj"
         scale="10 10 10"
         material="color: black"
-        rotation="-69 -87 177">
-      </a-obj-model>
+        rotation="-69 -87 177"
+      ></a-obj-model>
     </a-entity>
   </a-entity>
 </a-scene>
@@ -71,24 +74,22 @@
   const kartVideo = document.getElementById("kartVideo");
   const volant = document.getElementById("volant");
   const pivot = document.getElementById("volantPivot");
-  const skydome = document.getElementById("skydome");
   const kart = document.getElementById("kart");
   const cameraRig = document.getElementById("cameraRig");
   const info = document.getElementById("info");
 
   let volantPris = false;
-  let angleZ = 0;           // Angle volant (deg)
-  const maxAngle = 45;      // Limite rotation
-  const sensitivity = 0.5;  // Sensibilité souris/tactile
+  let angleZ = 0;
+  const maxAngle = 45;
+  const sensitivity = 0.5;
   let previousMouseX = null;
 
-  // Fonction lecture vidéo forcée
   async function tryPlayVideo() {
     try {
       await kartVideo.play();
       console.log("Vidéo démarrée");
-      // On « refresh » la source du skydome
-      skydome.setAttribute("src", "#kartVideo");
+      // Refresh source pour A-Frame
+      document.querySelector("#skydome").setAttribute("src", "#kartVideo");
     } catch (err) {
       console.warn("Erreur lecture vidéo:", err);
     }
@@ -99,19 +100,16 @@
     tryPlayVideo();
   });
 
-  // Clamp valeur entre min et max
   function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
   }
 
-  // Met à jour rotation volant, kart et camera
   function updateVisuals() {
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
     kart.setAttribute("rotation", `0 ${-angleZ} 0`);
     cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
   }
 
-  // Remet progressivement le volant au centre
   function resetVolant() {
     function step() {
       if (Math.abs(angleZ) < 0.5) {
@@ -126,7 +124,6 @@
     requestAnimationFrame(step);
   }
 
-  // Clique sur volant pour prendre ou lâcher
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     volant.setAttribute("material", "color", volantPris ? "red" : "black");
@@ -134,7 +131,6 @@
     if (!volantPris) resetVolant();
   });
 
-  // Déplacement souris
   window.addEventListener("mousemove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -146,12 +142,10 @@
   });
   window.addEventListener("mouseup", () => previousMouseX = null);
 
-  // Touches tactiles
   window.addEventListener("touchstart", e => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
-
   window.addEventListener("touchmove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -161,10 +155,8 @@
     }
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
-
   window.addEventListener("touchend", () => previousMouseX = null);
 
-  // Gestion contrôleur VR
   let baseZRotation = null;
   AFRAME.registerComponent("kart-controls", {
     tick: () => {
