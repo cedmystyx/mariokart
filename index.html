@@ -4,79 +4,19 @@
   <meta charset="UTF-8" />
   <title>Mario Kart 3D - Volant réaliste avec vidéo</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  <style>
-    /* 
-    body { margin: 0; overflow: hidden; background: #000; }
-    video { display: none; }
-    #info {
-      position: absolute;
-      top: 10px; left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-family: Arial, sans-serif;
-      background: rgba(0,0,0,0.6);
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: 1.2em;
-      user-select: none;
-      cursor: pointer;
-      z-index: 10;
-    }
-    #volant {
-      cursor: grab;
-    }
-    */
-  </style>
 </head>
 <body>
 
-<!-- 
-<div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le pour diriger le kart.</div>
+<a-scene>
 
-<!-- Vidéo 360° -->
-<!--
-<video id="kartVideo" muted playsinline crossorigin="anonymous" loop>
-  <source src="mario/kart.mp4" type="video/mp4" />
-</video>
--->
-
-<a-scene kart-controls embedded>
-<!--  <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
-
-  <a-light type="ambient" intensity="0.5"></a-light>
-  <a-light type="directional" intensity="1" position="0 4 2"></a-light>
--->
-  <a-gltf-model
+  <a-entity
     id="kart"
-    src="kart/VOITURE_COMPLETE.gltf"
+    gltf-model="kart/VOITURE_COMPLETE.gltf"
     scale="13 13 13"
     position="0 -6.2 -1.8"
     rotation="0 0 0">
-  </a-gltf-model>
-<!--
-  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 0 0">
-    <a-camera id="mainCamera" fov="80" wasd-controls="enabled: false" look-controls="reverseMouseDrag: false">
-      <a-cursor fuse="false" material="color: white; shader: flat"
-        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"></a-cursor>
-    </a-camera>
+  </a-entity>
 
-    <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
-
-    <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
-      <a-obj-model
-        id="volant"
-        class="clickable"
-        src="kart/volant.obj"
-        scale="10 10 10"
-        material="color: black"
-        rotation="-69 -87 177"
-      ></a-obj-model>
-    </a-entity>
-  </a-entity>-->
 </a-scene>
 </body>
 </html>
-<!--
-<script>
-  const kartVideo = document.getElementById("kartVideo");
-  const volant = document.getElementById
