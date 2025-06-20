@@ -2,27 +2,41 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mario Kart 3D - Vidéo auto + Kart + Volant</title>
+  <title>Mario Kart 3D - Interactif</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
     video { display: none; }
+    #info {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-family: Arial, sans-serif;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1.2em;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
+<!-- Instructions -->
+<div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le avec ta souris.</div>
+
 <!-- Vidéo 360° -->
-<video id="kartVideo" playsinline loop muted autoplay crossorigin="anonymous">
+<video id="kartVideo" muted playsinline autoplay loop crossorigin="anonymous">
   <source src="mario/kart.mp4" type="video/mp4">
 </video>
 
-<a-scene>
-  <!-- Skydome avec la vidéo -->
+<a-scene kart-controls embedded>
+  <!-- Vidéo en fond -->
   <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
 
   <!-- Kart -->
-  <a-entity
-    id="kart"
+  <a-entity id="kart"
     gltf-model="./kart/VOITURE_COMPLETE.gltf"
     scale="13 13 13"
     position="0 -6.2 -1.8"
@@ -31,24 +45,138 @@
 
   <!-- Volant -->
   <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
-    <a-obj-model
-      id="volant"
+    <a-obj-model id="volant"
       src="./kart/volant.obj"
       scale="10 10 10"
       material="color: black"
-      rotation="-69 -87 177">
+      rotation="-69 -87 177"
+      class="clickable">
     </a-obj-model>
+  </a-entity>
+
+  <!-- Caméra -->
+  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 0 0">
+    <a-camera fov="80" wasd-controls="enabled: false" look-controls="reverseMouseDrag: false">
+      <a-cursor fuse="false" material="color: white; shader: flat"
+        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02">
+      </a-cursor>
+    </a-camera>
   </a-entity>
 </a-scene>
 
 <script>
-  // Forcer la lecture vidéo après le chargement
+  const kartVideo = document.getElementById("kartVideo");
+  const volant = document.getElementById("volant");
+  const pivot = document.getElementById("volantPivot");
+  const kart = document.getElementById("kart");
+  const cameraRig = document.getElementById("cameraRig");
+  const info = document.getElementById("info");
+
+  let volantPris = false;
+  let angleZ = 0;
+  const maxAngle = 45;
+  const sensitivity = 0.5;
+  let previousMouseX = null;
+
+  // Lancer la vidéo au chargement
   window.addEventListener("load", () => {
-    const video = document.getElementById("kartVideo");
-    video.muted = true;
-    video.play().catch(err => {
-      console.warn("Lecture vidéo bloquée :", err);
+    kartVideo.play().catch(err => {
+      console.warn("Erreur lecture vidéo :", err);
     });
+  });
+
+  // Contrainte
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  // Mise à jour visuelle
+  function updateVisuals() {
+    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
+    kart.setAttribute("rotation", `0 ${-angleZ} 0`);
+    cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
+  }
+
+  // Retour progressif du volant
+  function resetVolant() {
+    function step() {
+      if (Math.abs(angleZ) < 0.5) {
+        angleZ = 0;
+        updateVisuals();
+        return;
+      }
+      angleZ *= 0.8;
+      updateVisuals();
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Interaction clique
+  volant.addEventListener("click", () => {
+    volantPris = !volantPris;
+    volant.setAttribute("material", "color", volantPris ? "red" : "black");
+    info.style.display = volantPris ? "none" : "block";
+    if (!volantPris) resetVolant();
+  });
+
+  // Souris
+  window.addEventListener("mousemove", e => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      const deltaX = e.clientX - previousMouseX;
+      angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
+    }
+    previousMouseX = e.clientX;
+  });
+
+  window.addEventListener("mouseup", () => {
+    previousMouseX = null;
+  });
+
+  // Tactile
+  window.addEventListener("touchstart", e => {
+    if (!volantPris) return;
+    previousMouseX = e.touches[0].clientX;
+  }, { passive: true });
+
+  window.addEventListener("touchmove", e => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      const dx = e.touches[0].clientX - previousMouseX;
+      angleZ = clamp(angleZ + dx * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
+    }
+    previousMouseX = e.touches[0].clientX;
+  }, { passive: true });
+
+  window.addEventListener("touchend", () => {
+    previousMouseX = null;
+  });
+
+  // Support VR controller rotation
+  let baseZRotation = null;
+  AFRAME.registerComponent("kart-controls", {
+    tick: () => {
+      if (!volantPris) {
+        baseZRotation = null;
+        return;
+      }
+      const controller = document.querySelector("#controller");
+      if (!controller || !controller.object3D) return;
+      const rot = controller.object3D.rotation;
+      if (!rot) return;
+
+      if (baseZRotation === null) {
+        baseZRotation = rot.z;
+        return;
+      }
+
+      const deltaDeg = THREE.MathUtils.radToDeg(rot.z - baseZRotation);
+      angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
+    }
   });
 </script>
 
