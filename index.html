@@ -105,7 +105,14 @@
   }
 
   function updateRotation() {
+    // Tourne le volant sur Z
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
+
+    // Tourne la vidéo sur Y, inversé pour que la vue suive le volant
+    const skydome = document.querySelector('#skydome');
+    const baseRotationY = 270; // rotation initiale de la vidéo sur Y
+    const newRotationY = baseRotationY - angleZ;
+    skydome.setAttribute('rotation', `0 ${newRotationY} 0`);
   }
 
   // Souris
