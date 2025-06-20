@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mario Kart 3D - Cockpit complet</title>
+  <title>Mario Kart 3D - Volant réaliste</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
@@ -25,16 +25,13 @@
 </head>
 <body>
 
-<div id="info">Clique sur le volant pour le prendre / lâcher. Appuie sur B pour BOOSTER.</div>
+<div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le pour diriger le kart.</div>
 
-<!-- Vidéo 360° -->
+<!-- Vidéo 360° fixe -->
 <video id="kartVideo" src="mario/kart.mp4" muted loop playsinline crossorigin="anonymous"></video>
 
-<!-- Son boost -->
-<audio id="boostSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_152372b237.mp3?filename=turbo-boost-115099.mp3"></audio>
-
 <a-scene kart-controls embedded>
-  <!-- Skydome vidéo -->
+  <!-- Skydome vidéo unique -->
   <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
 
   <!-- Lumières -->
@@ -47,11 +44,11 @@
     src="kart/VOITURE_COMPLETE.gltf"
     scale="13 13 13"
     position="0 -6.2 -1.8"
-    rotation="-0.5 0.9 -1.15">
+    rotation="0 0 0">
   </a-gltf-model>
 
   <!-- Camera + volant -->
-  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
+  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 0 0">
     <a-camera id="mainCamera" fov="80" wasd-controls="enabled: false" look-controls="reverseMouseDrag: false">
       <a-cursor fuse="false" material="color: white; shader: flat" geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"></a-cursor>
     </a-camera>
@@ -70,64 +67,49 @@
         rotation="-69 -87 177">
       </a-obj-model>
     </a-entity>
-
-    <!-- Effet boost -->
-    <a-entity
-      id="boostEffect"
-      geometry="primitive: ring; radiusInner: 0.5; radiusOuter: 1"
-      material="color: #00ccff; shader: flat; opacity: 0.5"
-      position="0 0 -4"
-      visible="false">
-    </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
   // Variables globales
   const kartVideo = document.querySelector("#kartVideo");
-  const boostSound = document.querySelector("#boostSound");
-  const boostEffect = document.querySelector("#boostEffect");
   const volant = document.querySelector("#volant");
   const pivot = document.querySelector("#volantPivot");
   const skydome = document.querySelector("#skydome");
-  const cameraEl = document.querySelector("#mainCamera");
-  const camera = cameraEl.components.camera.camera;
+  const kart = document.querySelector("#kart");
+  const cameraRig = document.querySelector("#cameraRig");
   const info = document.getElementById("info");
 
   let volantPris = false;
-  let angleZ = 0;
+  let angleZ = 0; // rotation volant en degrés (-45 à 45)
   const maxAngle = 45;
   const sensitivity = 0.5;
   let previousMouseX = null;
-  let isBoosting = false;
 
-  // Démarrage vidéo forcé (nécessaire sur certains navigateurs)
+  // Lecture vidéo forcée
   kartVideo.muted = true;
   kartVideo.play().catch(err => {
     console.warn("Erreur lancement vidéo :", err);
   });
 
-  // Fonction de limitation
+  // Clamp simple
   function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
   }
 
-  // Mise à jour visuelle volant + skydome + FOV
+  // Mise à jour visuelle et rotation kart + camera
   function updateVisuals() {
-    // Rotation volant
+    // Rotation du volant (autour de Z)
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
 
-    // Rotation skydome pour simuler virage
-    const baseRotationY = 270;
-    const maxSkydomeRotation = 20;
-    const offset = (angleZ / maxAngle) * maxSkydomeRotation;
-    skydome.setAttribute("rotation", `0 ${baseRotationY + offset} 0`);
+    // Rotation du kart (autour de Y), on inverse l'angle pour tourner dans la bonne direction
+    kart.setAttribute("rotation", `0 ${-angleZ} 0`);
 
-    // FOV dynamique si pas boost
-    if (!isBoosting && camera) {
-      camera.fov = 80 + Math.abs(angleZ) * 0.3;
-      camera.updateProjectionMatrix();
-    }
+    // Rotation de la cameraRig pour suivre le kart (vue cockpit)
+    cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
+
+    // Optionnel : légère inclinaison du skydome pour donner un effet subtil
+    // Ici on ne change pas la vidéo car elle est fixe
   }
 
   // Reset progressif du volant au centre
@@ -145,7 +127,7 @@
     requestAnimationFrame(step);
   }
 
-  // Gestion clic sur volant (VR + souris)
+  // Clic sur volant pour prendre / lâcher
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     volant.setAttribute("material", "color", volantPris ? "red" : "black");
@@ -153,7 +135,7 @@
     if (!volantPris) resetVolant();
   });
 
-  // Gestion déplacement souris pour tourner volant
+  // Déplacement souris pour tourner volant
   window.addEventListener("mousemove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -163,17 +145,13 @@
     }
     previousMouseX = e.clientX;
   });
-
-  window.addEventListener("mouseup", () => {
-    previousMouseX = null;
-  });
+  window.addEventListener("mouseup", () => previousMouseX = null);
 
   // Touches tactiles
   window.addEventListener("touchstart", e => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
-
   window.addEventListener("touchmove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -183,12 +161,9 @@
     }
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
+  window.addEventListener("touchend", () => previousMouseX = null);
 
-  window.addEventListener("touchend", () => {
-    previousMouseX = null;
-  });
-
-  // Composant A-Frame pour gérer contrôleur VR
+  // Gestion VR controller
   let baseZRotation = null;
   AFRAME.registerComponent("kart-controls", {
     tick: () => {
@@ -208,41 +183,6 @@
       angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
       updateVisuals();
     }
-  });
-
-  // Activation boost
-  function activateBoost() {
-    if (isBoosting) return;
-    isBoosting = true;
-    boostEffect.setAttribute("visible", true);
-    boostSound.currentTime = 0;
-    boostSound.play();
-    camera.fov = 120;
-    camera.updateProjectionMatrix();
-
-    setTimeout(() => {
-      boostEffect.setAttribute("visible", false);
-      let currentFov = camera.fov;
-
-      function fovBackStep() {
-        if (currentFov > 80) {
-          currentFov -= 1.5;
-          camera.fov = currentFov;
-          camera.updateProjectionMatrix();
-          requestAnimationFrame(fovBackStep);
-        } else {
-          camera.fov = 80;
-          camera.updateProjectionMatrix();
-          isBoosting = false;
-        }
-      }
-      fovBackStep();
-    }, 3000);
-  }
-
-  // Activation boost au clavier (touche B)
-  window.addEventListener("keydown", e => {
-    if (e.key.toLowerCase() === "b") activateBoost();
   });
 </script>
 
