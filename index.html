@@ -5,9 +5,9 @@
   <title>Mario Kart - Volant VR interactif</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; background: black; }
-    video { display: none; }
-    .clickable { cursor: pointer; }
+    body { margin:0; overflow:hidden; background: black;}
+    video { display:none; }
+    .clickable { cursor:pointer; }
     #info {
       position: absolute;
       top: 10px;
@@ -27,8 +27,9 @@
 
 <div id="info">Clique sur le volant pour le prendre en main</div>
 
-<!-- Vidéo unique -->
-<video id="video1" src="mario/kart.mp4" loop muted playsinline autoplay crossorigin="anonymous"></video>
+<!-- Vidéos -->
+<video id="video1" src="mario/kart.mp4" loop muted playsinline crossorigin="anonymous"></video>
+<video id="video2" src="mario/kartNB.mp4" loop muted playsinline crossorigin="anonymous"></video>
 
 <a-scene volant-vr-control>
   <!-- Skydome -->
@@ -40,7 +41,7 @@
   <!-- Kart -->
   <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.15"></a-gltf-model>
 
-  <!-- Caméra + Volant -->
+  <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
     <a-camera look-controls wasd-controls="enabled: false">
       <a-cursor fuse="false" material="color: white; shader: flat"
@@ -48,8 +49,10 @@
       </a-cursor>
     </a-camera>
 
+    <!-- Contrôleur VR droit avec laser -->
     <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
+    <!-- Pivot du volant -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
       <a-obj-model
         id="volant"
@@ -57,15 +60,23 @@
         src="kart/volant.obj"
         scale="10 10 10"
         material="color: black"
-        rotation="-69 -87 177">
-      </a-obj-model>
+        rotation="-68.89645599109609 -87.47289362482768 177.64785621149227"
+      ></a-obj-model>
     </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
-  const video = document.querySelector("#video1");
-  video.play().catch(err => console.warn("Erreur vidéo :", err));
+  const audioGrab = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+  const audioSwitch = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
+
+  const videos = [document.querySelector("#video1"), document.querySelector("#video2")];
+  const skydome = document.querySelector("#skydome");
+  let currentIndex = 0;
+
+  videos.forEach((video, i) => {
+    video.play().catch(err => console.warn(`Erreur vidéo ${i + 1}:`, err));
+  });
 
   const volant = document.querySelector("#volant");
   const pivot = document.querySelector("#volantPivot");
@@ -73,16 +84,18 @@
   let volantPris = false;
   let previousMouseX = null;
   let angleZ = 0;
-  const maxAngle = 45;
+  const maxAngle = 30;  // <-- Limite modifiée ici
   const sensitivity = 0.5;
   let animationFrameId;
 
+  // Click (souris + VR)
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     document.body.style.cursor = volantPris ? "grabbing" : "default";
     volant.setAttribute("material", "color", volantPris ? "red" : "black");
     infoDiv.style.display = volantPris ? "none" : "block";
-    if (!volantPris) animateReturnToCenter();
+    if (volantPris) audioGrab.play();
+    else animateReturnToCenter();
   });
 
   function clamp(val, min, max) {
@@ -95,24 +108,38 @@
       if (Math.abs(angleZ) < 0.5) {
         angleZ = 0;
         updateRotation();
+        updateSkydome();
         return;
       }
       angleZ *= 0.8;
       updateRotation();
+      updateSkydome();
       animationFrameId = requestAnimationFrame(step);
     }
     animationFrameId = requestAnimationFrame(step);
   }
 
   function updateRotation() {
-    // Tourne le volant sur Z
+    // Rotation du volant sur Z
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
 
-    // Tourne la vidéo sur Y, inversé pour que la vue suive le volant
-    const skydome = document.querySelector('#skydome');
-    const baseRotationY = 270; // rotation initiale de la vidéo sur Y
+    // Rotation du skydome sur Y, inversée pour que la vue suive le volant
+    const baseRotationY = 270; // rotation initiale de la vidéo
     const newRotationY = baseRotationY - angleZ;
     skydome.setAttribute('rotation', `0 ${newRotationY} 0`);
+  }
+
+  function updateSkydome() {
+    // Change la source vidéo selon la rotation, pour effet visuel supplémentaire
+    if (angleZ > 10 && currentIndex !== 0) {
+      skydome.setAttribute("src", "#video1");
+      currentIndex = 0;
+      audioSwitch.play();
+    } else if (angleZ < -10 && currentIndex !== 1) {
+      skydome.setAttribute("src", "#video2");
+      currentIndex = 1;
+      audioSwitch.play();
+    }
   }
 
   // Souris
@@ -122,6 +149,7 @@
       let deltaX = e.clientX - previousMouseX;
       angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
       updateRotation();
+      updateSkydome();
     }
     previousMouseX = e.clientX;
   });
@@ -142,6 +170,7 @@
       let deltaX = e.touches[0].clientX - previousMouseX;
       angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
       updateRotation();
+      updateSkydome();
     }
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
@@ -151,7 +180,9 @@
   });
 
   updateRotation();
+  updateSkydome();
 
+  // Composant A-Frame pour contrôleur VR
   let baseControllerRotation = null;
 
   AFRAME.registerComponent('volant-vr-control', {
@@ -176,6 +207,7 @@
       let deltaDeg = THREE.MathUtils.radToDeg(delta) * sensitivity;
       angleZ = clamp(deltaDeg, -maxAngle, maxAngle);
       updateRotation();
+      updateSkydome();
     }
   });
 </script>
