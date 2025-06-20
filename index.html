@@ -27,9 +27,9 @@
 
 <div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le pour diriger le kart.</div>
 
+<!-- Vidéo 360° -->
 <video id="kartVideo" muted playsinline crossorigin="anonymous" loop>
   <source src="mario/kart.mp4" type="video/mp4" />
-  <!-- ajoute d'autres formats si besoin -->
 </video>
 
 <a-scene kart-controls embedded>
@@ -77,43 +77,41 @@
   const info = document.getElementById("info");
 
   let volantPris = false;
-  let angleZ = 0;
-  const maxAngle = 45;
-  const sensitivity = 0.5;
+  let angleZ = 0;           // Angle volant (deg)
+  const maxAngle = 45;      // Limite rotation
+  const sensitivity = 0.5;  // Sensibilité souris/tactile
   let previousMouseX = null;
 
-  // Fonction pour démarrer la vidéo quand possible
-  function tryPlayVideo() {
-    kartVideo.play()
-      .then(() => {
-        console.log("Vidéo démarrée");
-        // Forcer refresh du skydome
-        skydome.setAttribute("src", "#kartVideo");
-      })
-      .catch(err => {
-        console.warn("Erreur lecture vidéo:", err);
-      });
+  // Fonction lecture vidéo forcée
+  async function tryPlayVideo() {
+    try {
+      await kartVideo.play();
+      console.log("Vidéo démarrée");
+      // On « refresh » la source du skydome
+      skydome.setAttribute("src", "#kartVideo");
+    } catch (err) {
+      console.warn("Erreur lecture vidéo:", err);
+    }
   }
 
-  // Dès que la page est prête, tenter de lancer la vidéo
   window.addEventListener("load", () => {
     kartVideo.muted = true;
     tryPlayVideo();
   });
 
-  // Clamp entre min et max
+  // Clamp valeur entre min et max
   function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
   }
 
-  // Mise à jour visuelle
+  // Met à jour rotation volant, kart et camera
   function updateVisuals() {
     pivot.setAttribute("rotation", `0 0 ${angleZ}`);
     kart.setAttribute("rotation", `0 ${-angleZ} 0`);
     cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
   }
 
-  // Reset progressif volant
+  // Remet progressivement le volant au centre
   function resetVolant() {
     function step() {
       if (Math.abs(angleZ) < 0.5) {
@@ -128,7 +126,7 @@
     requestAnimationFrame(step);
   }
 
-  // Interaction volant
+  // Clique sur volant pour prendre ou lâcher
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     volant.setAttribute("material", "color", volantPris ? "red" : "black");
@@ -136,7 +134,7 @@
     if (!volantPris) resetVolant();
   });
 
-  // Souris
+  // Déplacement souris
   window.addEventListener("mousemove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -148,11 +146,12 @@
   });
   window.addEventListener("mouseup", () => previousMouseX = null);
 
-  // Tactile
+  // Touches tactiles
   window.addEventListener("touchstart", e => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
+
   window.addEventListener("touchmove", e => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -162,9 +161,10 @@
     }
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
+
   window.addEventListener("touchend", () => previousMouseX = null);
 
-  // VR controller rotation
+  // Gestion contrôleur VR
   let baseZRotation = null;
   AFRAME.registerComponent("kart-controls", {
     tick: () => {
