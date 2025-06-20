@@ -2,12 +2,24 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mario Kart 3D - Kart + Volant uniquement</title>
+  <title>Mario Kart 3D - Kart + Volant + Vidéo</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+    video { display: none; }
+  </style>
 </head>
 <body>
 
+<!-- Vidéo 360° cachée, utilisée dans la sphère -->
+<video id="kartVideo" muted playsinline crossorigin="anonymous" loop autoplay>
+  <source src="mario/kart.mp4" type="video/mp4" />
+</video>
+
 <a-scene>
+  <!-- Skydome avec la vidéo -->
+  <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
+
   <!-- Kart principal -->
   <a-entity
     id="kart"
