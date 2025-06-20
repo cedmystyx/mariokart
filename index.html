@@ -41,7 +41,7 @@
   <!-- Kart -->
   <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.15"></a-gltf-model>
 
-  <!-- Caméra + Volant encapsulé -->
+  <!-- Caméra + Volant -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
     <a-camera look-controls wasd-controls="enabled: false">
       <a-cursor fuse="false" material="color: white; shader: flat"
@@ -49,10 +49,8 @@
       </a-cursor>
     </a-camera>
 
-    <!-- Contrôleur VR droit avec laser -->
     <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
-    <!-- Pivot du volant -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
       <a-obj-model
         id="volant"
@@ -88,7 +86,6 @@
   const sensitivity = 0.5;
   let animationFrameId;
 
-  // Click (souris + VR)
   volant.addEventListener("click", () => {
     volantPris = !volantPris;
     document.body.style.cursor = volantPris ? "grabbing" : "default";
@@ -122,6 +119,14 @@
   }
 
   function updateSkydome() {
+    // 🎥 Effet visuel de virage
+    const baseYRotation = 270;
+    const maxYDelta = 8;
+    const yOffset = (angleZ / maxAngle) * maxYDelta;
+
+    skydome.setAttribute("rotation", `0 ${baseYRotation + yOffset} 0`);
+
+    // (Optionnel) changer la vidéo selon le côté
     if (angleZ > 10 && currentIndex !== 0) {
       skydome.setAttribute("src", "#video1");
       currentIndex = 0;
@@ -133,7 +138,6 @@
     }
   }
 
-  // Souris
   window.addEventListener("mousemove", (e) => {
     if (!volantPris) return;
     if (previousMouseX !== null) {
@@ -145,11 +149,8 @@
     previousMouseX = e.clientX;
   });
 
-  window.addEventListener("mouseup", () => {
-    previousMouseX = null;
-  });
+  window.addEventListener("mouseup", () => previousMouseX = null);
 
-  // Tactile
   window.addEventListener("touchstart", (e) => {
     if (!volantPris) return;
     previousMouseX = e.touches[0].clientX;
@@ -166,13 +167,11 @@
     previousMouseX = e.touches[0].clientX;
   }, { passive: true });
 
-  window.addEventListener("touchend", () => {
-    previousMouseX = null;
-  });
+  window.addEventListener("touchend", () => previousMouseX = null);
 
   updateRotation();
 
-  // Composant A-Frame pour contrôleur VR
+  // Contrôle VR
   let baseControllerRotation = null;
 
   AFRAME.registerComponent('volant-vr-control', {
