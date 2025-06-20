@@ -2,49 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mario Kart 3D - Volant réaliste avec vidéo</title>
+  <title>Mario Kart 3D - Kart + Volant uniquement</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; background: #000; }
-    video { display: none; }
-    #info {
-      position: absolute;
-      top: 10px; left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-family: Arial, sans-serif;
-      background: rgba(0,0,0,0.6);
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: 1.2em;
-      user-select: none;
-      cursor: pointer;
-      z-index: 10;
-    }
-    .clickable {
-      cursor: grab;
-    }
-  </style>
 </head>
 <body>
 
-<div id="info">Clique sur le volant pour le prendre / lâcher. Tourne-le pour diriger le kart.</div>
-
-<!-- Vidéo 360° -->
-<video id="kartVideo" muted playsinline crossorigin="anonymous" loop>
-  <source src="mario/kart.mp4" type="video/mp4" />
-</video>
-
-<a-scene kart-controls embedded>
-
-  <!-- Skydome vidéo 360° -->
-  <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
-
-  <!-- Lumières -->
-  <a-light type="ambient" intensity="0.5"></a-light>
-  <a-light type="directional" intensity="1" position="0 4 2"></a-light>
-
-  <!-- Modèle kart -->
+<a-scene>
+  <!-- Kart principal -->
   <a-entity
     id="kart"
     gltf-model="./kart/VOITURE_COMPLETE.gltf"
@@ -53,141 +17,17 @@
     rotation="0 0 0">
   </a-entity>
 
-  <!-- Caméra & volant -->
-  <a-entity id="cameraRig" position="0 1.2 0" rotation="0 0 0">
-    <a-camera id="mainCamera" fov="80" wasd-controls="enabled: false" look-controls="reverseMouseDrag: false">
-      <a-cursor fuse="false" material="color: white; shader: flat"
-        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"></a-cursor>
-    </a-camera>
-
-    <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
-
-    <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
-      <a-obj-model
-        id="volant"
-        class="clickable"
-        src="./kart/volant.obj"
-        scale="10 10 10"
-        material="color: black"
-        rotation="-69 -87 177"
-      ></a-obj-model>
-    </a-entity>
+  <!-- Volant indépendant -->
+  <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
+    <a-obj-model
+      id="volant"
+      src="./kart/volant.obj"
+      scale="10 10 10"
+      material="color: black"
+      rotation="-69 -87 177">
+    </a-obj-model>
   </a-entity>
-
 </a-scene>
-
-<script>
-  const kartVideo = document.getElementById("kartVideo");
-  const volant = document.getElementById("volant");
-  const pivot = document.getElementById("volantPivot");
-  const kart = document.getElementById("kart");
-  const cameraRig = document.getElementById("cameraRig");
-  const info = document.getElementById("info");
-
-  let volantPris = false;
-  let angleZ = 0;           // angle volant (deg)
-  const maxAngle = 45;      // limite rotation
-  const sensitivity = 0.5;  // sensibilité souris/tactile
-  let previousMouseX = null;
-
-  async function tryPlayVideo() {
-    try {
-      await kartVideo.play();
-      console.log("Vidéo démarrée");
-      pivot.setAttribute("rotation", "0 0 0"); // reset volant si besoin
-      // refresh skydome source pour être sûr que ça s'affiche
-      document.querySelector("#skydome").setAttribute("src", "#kartVideo");
-    } catch (err) {
-      console.warn("Erreur lecture vidéo:", err);
-    }
-  }
-
-  window.addEventListener("load", () => {
-    kartVideo.muted = true;
-    tryPlayVideo();
-  });
-
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-  }
-
-  function updateVisuals() {
-    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
-    kart.setAttribute("rotation", `0 ${-angleZ} 0`);
-    cameraRig.setAttribute("rotation", `0 ${-angleZ} 0`);
-  }
-
-  function resetVolant() {
-    function step() {
-      if (Math.abs(angleZ) < 0.5) {
-        angleZ = 0;
-        updateVisuals();
-        return;
-      }
-      angleZ *= 0.8;
-      updateVisuals();
-      requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  volant.addEventListener("click", () => {
-    volantPris = !volantPris;
-    volant.setAttribute("material", "color", volantPris ? "red" : "black");
-    info.style.display = volantPris ? "none" : "block";
-    if (!volantPris) resetVolant();
-  });
-
-  // Souris
-  window.addEventListener("mousemove", e => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const deltaX = e.clientX - previousMouseX;
-      angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.clientX;
-  });
-  window.addEventListener("mouseup", () => previousMouseX = null);
-
-  // Tactile
-  window.addEventListener("touchstart", e => {
-    if (!volantPris) return;
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-  window.addEventListener("touchmove", e => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const dx = e.touches[0].clientX - previousMouseX;
-      angleZ = clamp(angleZ + dx * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-  window.addEventListener("touchend", () => previousMouseX = null);
-
-  // Contrôleur VR
-  let baseZRotation = null;
-  AFRAME.registerComponent("kart-controls", {
-    tick: () => {
-      if (!volantPris) {
-        baseZRotation = null;
-        return;
-      }
-      const controller = document.querySelector("#controller");
-      if (!controller || !controller.object3D) return;
-
-      const rot = controller.object3D.rotation;
-      if (baseZRotation === null) {
-        baseZRotation = rot.z;
-        return;
-      }
-      const deltaDeg = THREE.MathUtils.radToDeg(rot.z - baseZRotation);
-      angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-  });
-</script>
 
 </body>
 </html>
