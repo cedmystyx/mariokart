@@ -39,7 +39,7 @@
   <a-light type="directional" intensity="1.2" position="0 4 4"></a-light>
 
   <!-- Kart -->
-  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.15"></a-gltf-model>
+  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="30 30 30" position="-0.03134 -6.20565 -1.75587" rotation="-0.5 0.9 -1.1500000000000001" gltf-model="kart/VOITURE_COMPLETE.gltf"></a-gltf-model>
 
   <!-- Caméra + Volant encapsulé -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
@@ -54,14 +54,7 @@
 
     <!-- Pivot du volant -->
     <a-entity id="volantPivot" position="-0.13608 -2.40846 -4.64479" rotation="0 0 0">
-      <a-obj-model
-        id="volant"
-        class="clickable"
-        src="kart/volant.obj"
-        scale="10 10 10"
-        material="color: black"
-        rotation="-68.89645599109609 -87.47289362482768 177.64785621149227"
-      ></a-obj-model>
+      <a-obj-model id="volant" class="clickable" src="kart/volant.obj" scale="30 30 30" material="color: red" rotation="-68.89645599109609 -87.47289362482768 177.64785621149227" position="-0.25131 6.57958 -9.29492"></a-obj-model>
     </a-entity>
   </a-entity>
 </a-scene>
