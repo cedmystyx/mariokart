@@ -1,63 +1,97 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Mario Kart 3D - Vue cockpit boost</title>
+  <meta charset="UTF-8" />
+  <title>Mario Kart 3D - Cockpit complet</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
     video { display: none; }
-    .clickable { cursor: pointer; }
-
     #info {
       position: absolute;
-      top: 10px;
-      left: 50%;
+      top: 10px; left: 50%;
       transform: translateX(-50%);
       color: white;
       font-family: Arial, sans-serif;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       padding: 10px 20px;
       border-radius: 10px;
       font-size: 1.2em;
+      user-select: none;
+      cursor: pointer;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
 
-<div id="info">Clique sur le volant pour le prendre</div>
-<video id="kartVideo" src="mario/kart.mp4" autoplay loop muted playsinline crossorigin="anonymous"></video>
+<div id="info">Clique sur le volant pour le prendre / lâcher. Appuie sur B pour BOOSTER.</div>
+
+<!-- Vidéo 360° -->
+<video id="kartVideo" src="mario/kart.mp4" muted loop playsinline crossorigin="anonymous"></video>
+
+<!-- Son boost -->
 <audio id="boostSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_152372b237.mp3?filename=turbo-boost-115099.mp3"></audio>
 
-<a-scene id="scene" kart-controls>
+<a-scene kart-controls embedded>
+  <!-- Skydome vidéo -->
   <a-videosphere id="skydome" src="#kartVideo" rotation="0 270 0"></a-videosphere>
+
+  <!-- Lumières -->
   <a-light type="ambient" intensity="0.5"></a-light>
   <a-light type="directional" intensity="1" position="0 4 2"></a-light>
 
-  <a-gltf-model id="kart" src="kart/VOITURE_COMPLETE.gltf" scale="13 13 13" position="0 -6.2 -1.8" rotation="-0.5 0.9 -1.15"></a-gltf-model>
+  <!-- Modèle kart -->
+  <a-gltf-model
+    id="kart"
+    src="kart/VOITURE_COMPLETE.gltf"
+    scale="13 13 13"
+    position="0 -6.2 -1.8"
+    rotation="-0.5 0.9 -1.15">
+  </a-gltf-model>
 
+  <!-- Camera + volant -->
   <a-entity id="cameraRig" position="0 1.2 0" rotation="0 180 0">
-    <a-camera id="mainCamera" fov="80" wasd-controls="enabled: false">
+    <a-camera id="mainCamera" fov="80" wasd-controls="enabled: false" look-controls="reverseMouseDrag: false">
       <a-cursor fuse="false" material="color: white; shader: flat" geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"></a-cursor>
     </a-camera>
 
+    <!-- Contrôleur VR -->
     <a-entity id="controller" laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
+    <!-- Volant pivot -->
     <a-entity id="volantPivot" position="-0.13 -2.4 -4.64" rotation="0 0 0">
-      <a-obj-model id="volant" src="kart/volant.obj" scale="10 10 10" class="clickable" material="color: black" rotation="-69 -87 177"></a-obj-model>
+      <a-obj-model
+        id="volant"
+        class="clickable"
+        src="kart/volant.obj"
+        scale="10 10 10"
+        material="color: black"
+        rotation="-69 -87 177">
+      </a-obj-model>
     </a-entity>
 
-    <a-entity id="boostEffect" geometry="primitive: ring; radiusInner: 0.5; radiusOuter: 1" material="color: #00ccff; shader: flat; opacity: 0.5" position="0 0 -4" rotation="0 0 0" visible="false"></a-entity>
+    <!-- Effet boost -->
+    <a-entity
+      id="boostEffect"
+      geometry="primitive: ring; radiusInner: 0.5; radiusOuter: 1"
+      material="color: #00ccff; shader: flat; opacity: 0.5"
+      position="0 0 -4"
+      visible="false">
+    </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
+  // Variables globales
+  const kartVideo = document.querySelector("#kartVideo");
+  const boostSound = document.querySelector("#boostSound");
+  const boostEffect = document.querySelector("#boostEffect");
   const volant = document.querySelector("#volant");
   const pivot = document.querySelector("#volantPivot");
   const skydome = document.querySelector("#skydome");
-  const boostEffect = document.querySelector("#boostEffect");
-  const boostSound = document.querySelector("#boostSound");
-  const camera = document.querySelector("#mainCamera").components.camera.camera;
+  const cameraEl = document.querySelector("#mainCamera");
+  const camera = cameraEl.components.camera.camera;
   const info = document.getElementById("info");
 
   let volantPris = false;
@@ -67,13 +101,36 @@
   let previousMouseX = null;
   let isBoosting = false;
 
-  volant.addEventListener("click", () => {
-    volantPris = !volantPris;
-    volant.setAttribute("material", "color", volantPris ? "red" : "black");
-    info.style.display = volantPris ? "none" : "block";
-    if (!volantPris) resetVolant();
+  // Démarrage vidéo forcé (nécessaire sur certains navigateurs)
+  kartVideo.muted = true;
+  kartVideo.play().catch(err => {
+    console.warn("Erreur lancement vidéo :", err);
   });
 
+  // Fonction de limitation
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  // Mise à jour visuelle volant + skydome + FOV
+  function updateVisuals() {
+    // Rotation volant
+    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
+
+    // Rotation skydome pour simuler virage
+    const baseRotationY = 270;
+    const maxSkydomeRotation = 20;
+    const offset = (angleZ / maxAngle) * maxSkydomeRotation;
+    skydome.setAttribute("rotation", `0 ${baseRotationY + offset} 0`);
+
+    // FOV dynamique si pas boost
+    if (!isBoosting && camera) {
+      camera.fov = 80 + Math.abs(angleZ) * 0.3;
+      camera.updateProjectionMatrix();
+    }
+  }
+
+  // Reset progressif du volant au centre
   function resetVolant() {
     function step() {
       if (Math.abs(angleZ) < 0.5) {
@@ -88,23 +145,72 @@
     requestAnimationFrame(step);
   }
 
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-  }
+  // Gestion clic sur volant (VR + souris)
+  volant.addEventListener("click", () => {
+    volantPris = !volantPris;
+    volant.setAttribute("material", "color", volantPris ? "red" : "black");
+    info.style.display = volantPris ? "none" : "block";
+    if (!volantPris) resetVolant();
+  });
 
-  function updateVisuals() {
-    pivot.setAttribute("rotation", `0 0 ${angleZ}`);
-    const baseRot = 270;
-    const visualMax = 20;
-    const offsetY = (angleZ / maxAngle) * visualMax;
-    skydome.setAttribute("rotation", `0 ${baseRot + offsetY} 0`);
-
-    if (!isBoosting && camera) {
-      camera.fov = 80 + Math.abs(angleZ) * 0.3;
-      camera.updateProjectionMatrix();
+  // Gestion déplacement souris pour tourner volant
+  window.addEventListener("mousemove", e => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      const deltaX = e.clientX - previousMouseX;
+      angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
     }
-  }
+    previousMouseX = e.clientX;
+  });
 
+  window.addEventListener("mouseup", () => {
+    previousMouseX = null;
+  });
+
+  // Touches tactiles
+  window.addEventListener("touchstart", e => {
+    if (!volantPris) return;
+    previousMouseX = e.touches[0].clientX;
+  }, { passive: true });
+
+  window.addEventListener("touchmove", e => {
+    if (!volantPris) return;
+    if (previousMouseX !== null) {
+      const dx = e.touches[0].clientX - previousMouseX;
+      angleZ = clamp(angleZ + dx * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
+    }
+    previousMouseX = e.touches[0].clientX;
+  }, { passive: true });
+
+  window.addEventListener("touchend", () => {
+    previousMouseX = null;
+  });
+
+  // Composant A-Frame pour gérer contrôleur VR
+  let baseZRotation = null;
+  AFRAME.registerComponent("kart-controls", {
+    tick: () => {
+      if (!volantPris) {
+        baseZRotation = null;
+        return;
+      }
+      const controller = document.querySelector("#controller");
+      if (!controller || !controller.object3D) return;
+
+      const rot = controller.object3D.rotation;
+      if (baseZRotation === null) {
+        baseZRotation = rot.z;
+        return;
+      }
+      const deltaDeg = THREE.MathUtils.radToDeg(rot.z - baseZRotation);
+      angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
+      updateVisuals();
+    }
+  });
+
+  // Activation boost
   function activateBoost() {
     if (isBoosting) return;
     isBoosting = true;
@@ -117,6 +223,7 @@
     setTimeout(() => {
       boostEffect.setAttribute("visible", false);
       let currentFov = camera.fov;
+
       function fovBackStep() {
         if (currentFov > 80) {
           currentFov -= 1.5;
@@ -133,57 +240,9 @@
     }, 3000);
   }
 
-  window.addEventListener("keydown", (e) => {
+  // Activation boost au clavier (touche B)
+  window.addEventListener("keydown", e => {
     if (e.key.toLowerCase() === "b") activateBoost();
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const deltaX = e.clientX - previousMouseX;
-      angleZ = clamp(angleZ + deltaX * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.clientX;
-  });
-
-  window.addEventListener("mouseup", () => previousMouseX = null);
-
-  window.addEventListener("touchstart", (e) => {
-    if (!volantPris) return;
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-
-  window.addEventListener("touchmove", (e) => {
-    if (!volantPris) return;
-    if (previousMouseX !== null) {
-      const dx = e.touches[0].clientX - previousMouseX;
-      angleZ = clamp(angleZ + dx * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
-    previousMouseX = e.touches[0].clientX;
-  }, { passive: true });
-
-  window.addEventListener("touchend", () => previousMouseX = null);
-
-  let baseZ = null;
-  AFRAME.registerComponent('kart-controls', {
-    tick: () => {
-      if (!volantPris) {
-        baseZ = null;
-        return;
-      }
-      const ctrl = document.querySelector("#controller");
-      if (!ctrl || !ctrl.object3D) return;
-      const rot = ctrl.object3D.rotation;
-      if (baseZ === null) {
-        baseZ = rot.z;
-        return;
-      }
-      const deltaDeg = THREE.MathUtils.radToDeg(rot.z - baseZ);
-      angleZ = clamp(deltaDeg * sensitivity, -maxAngle, maxAngle);
-      updateVisuals();
-    }
   });
 </script>
 
